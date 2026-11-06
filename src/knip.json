@@ -1,0 +1,8 @@
+{
+    "entry": ["src/main.jsx"],
+    "project": ["src/**/*.{js,jsx}"],
+    "ignore": ["src/vite-env.d.ts"],
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  }

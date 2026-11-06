@@ -1,0 +1,15 @@
+export const styles = {
+    excelBtn: { backgroundColor: "#1e7e34", color: "#fff", border: "none", padding: "10px 18px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" },
+    refreshBtn: { backgroundColor: "#1565c0", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "13px" },
+    filterRow: { display: "flex", gap: "16px", flexWrap: "wrap", margin: "12px 0 20px", alignItems: "flex-end" },
+    dateField: { display: "flex", flexDirection: "column", gap: "4px" },
+    fieldLabel: { fontSize: "12px", fontWeight: "600", color: "#555" },
+    dateInput: { padding: "8px 10px", borderRadius: "6px", border: "1px solid #ccc", fontSize: "13px" },
+    kpiRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "20px" },
+    kpiCard: { background: "#fff", border: "1px solid #e0e0e0", borderTop: "4px solid #1565c0", borderRadius: "8px", padding: "14px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" },
+    kpiLabel: { fontSize: "12px", color: "#777", marginBottom: "4px" },
+    kpiValue: { fontSize: "20px", fontWeight: "700", color: "#263238" },
+    kpiSub: { fontSize: "11px", color: "#999", marginTop: "2px" },
+    sectionRow: { backgroundColor: "#eceff1", fontWeight: "700", fontSize: "12.5px", color: "#37474f" },
+    labaRow: { backgroundColor: "#f1f8e9", borderTop: "2px solid #a5d6a7" },
+};

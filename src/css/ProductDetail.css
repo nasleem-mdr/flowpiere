@@ -1,0 +1,491 @@
+/* Opsional: import Inter untuk tipografi yang lebih rapi di halaman ini.
+   Kalau App.css / project-mu sudah load font lain secara global, baris ini
+   boleh dihapus — stack fallback system-ui di bawah tetap terlihat bersih. */
+   @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+   /* ─────────────────────────────────────────────────────────────────────────
+      ProductDetail.css
+      Dipakai khusus oleh halaman Product Detail (form Insert/Edit M_Product,
+      M_BPartnerProduct, M_ProductPrice). Palet mengikuti warna brand yang
+      sudah dipakai di ProductList.jsx (navy #1a265b & orange #f6a623) supaya
+      konsisten dengan halaman lain, bukan warna baru yang asing.
+      ───────────────────────────────────────────────────────────────────── */
+   
+   .card-container {
+       --pd-navy: #1a265b;
+       --pd-navy-soft: #2c3a7a;
+       --pd-orange: #f6a623;
+       --pd-orange-dark: #d98f12;
+       --pd-bg: #f5f6f8;
+       --pd-surface: #ffffff;
+       --pd-border: #e2e5eb;
+       --pd-border-strong: #cbd0da;
+       --pd-text: #1c2130;
+       --pd-text-muted: #6b7280;
+       --pd-danger: #c0392b;
+       --pd-danger-bg: #fdecea;
+       --pd-success-bg: #eaf7ef;
+       --pd-radius: 8px;
+       --pd-radius-sm: 6px;
+       min-width: 1080px;       
+       margin: 0 auto;
+       padding: 24px 20px 48px;
+       background: var(--pd-bg);
+       color: var(--pd-text);
+       font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+       font-size: 14px;
+       line-height: 1.5;
+   }
+   
+   .card-container * {
+       box-sizing: border-box;
+   }
+   
+   /* ─── Status states (loading / not found) ─────────────────────────────── */
+   
+   .detail-status {
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       min-height: 240px;
+       color: var(--pd-text-muted);
+       font-size: 15px;
+   }
+   
+   .detail-status-empty {
+       color: var(--pd-danger);
+   }
+   
+   /* ─── Top bar ──────────────────────────────────────────────────────────── */
+   
+   .detail-topbar {
+       display: flex;
+       align-items: center;
+       justify-content: space-between;
+       gap: 16px;
+       margin-bottom: 20px;
+       padding-bottom: 16px;
+       border-bottom: 1px solid var(--pd-border);
+   }
+   
+   .product-id-badge {
+       color: var(--pd-text-muted);
+       font-size: 13px;
+       letter-spacing: 0.01em;
+   }
+   
+   .topbar-actions {
+       display: flex;
+       gap: 8px;
+   }
+   
+   /* ─── Buttons ──────────────────────────────────────────────────────────── */
+   
+   .btn,
+   .btn-back,
+   button {
+       font-family: inherit;
+       font-size: 13.5px;
+       font-weight: 600;
+       border-radius: var(--pd-radius-sm);
+       padding: 9px 16px;
+       border: 1px solid var(--pd-border-strong);
+       background: var(--pd-surface);
+       color: var(--pd-text);
+       cursor: pointer;
+       transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+   }
+   
+   .btn:hover,
+   .btn-back:hover,
+   button:hover {
+       border-color: var(--pd-navy-soft);
+   }
+   
+   .btn:active,
+   button:active {
+       transform: translateY(1px);
+   }
+   
+   .btn:disabled,
+   button:disabled {
+       opacity: 0.55;
+       cursor: not-allowed;
+       transform: none;
+   }
+   
+   .btn-back {
+       padding: 8px 14px;
+       color: var(--pd-navy);
+       background: transparent;
+       border-color: transparent;
+   }
+   
+   .btn-back:hover {
+       background: var(--pd-surface);
+       border-color: var(--pd-border);
+   }
+   
+   .btn-primary {
+       background: var(--pd-navy);
+       border-color: var(--pd-navy);
+       color: #ffffff;
+       background: #1f6feb;
+   }
+   
+   .btn-primary:hover:not(:disabled) {
+       background: var(--pd-navy-soft);
+       border-color: var(--pd-navy-soft);
+   }
+   
+   .btn-secondary {
+    background: transparent;
+    color: #8b949e;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 11px 20px;
+    font-size: 13px;
+    font-weight: 400;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-secondary:hover {
+    border-color: #8b949e;
+    color: #e6edf3;
+  }
+   
+   .btn-ghost {
+       background: transparent;
+       border-color: var(--pd-border-strong);
+       color: var(--pd-text-muted);
+   }
+   
+   .btn-ghost:hover:not(:disabled) {
+       background: var(--pd-surface);
+       color: var(--pd-text);
+   }
+   
+   /* ─── Layout grid & section cards ─────────────────────────────────────── */
+   
+   .detail-grid {
+       display: grid;
+       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+       gap: 16px;
+       align-items: start;
+   }
+   
+   .detail-section {
+       background: var(--pd-surface);
+       border: 1px solid var(--pd-border);
+       border-radius: var(--pd-radius);
+       padding: 20px 22px;
+   }
+
+   .classification-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* Membuat 2 kolom dengan lebar sama */
+        gap: 16px; /* Jarak antar kolom */
+    }
+
+    .classification-section {
+        display: flex;
+        flex-direction: column; /* Label di atas, select/p di bawah */
+    }
+    
+   .detail-section h3 {
+       margin: 0 0 16px;
+       padding-left: 11px;
+       border-left: 3px solid var(--pd-orange);
+       font-size: 15px;
+       font-weight: 700;
+       color: var(--pd-navy);
+   }
+   
+   /* ─── Form fields (label / input pairs stacked inside .info-group) ──────── */
+   
+   .info-group {
+       display: flex;
+       flex-direction: column;
+       gap: 4px;
+   }
+   
+   .info-group label {
+       margin-top: 14px;
+       font-size: 12.5px;
+       font-weight: 600;
+       color: var(--pd-text-muted);
+   }
+   
+   .info-group label:first-child {
+       margin-top: 0;
+   }
+   
+   .info-group p {
+       margin: 0;
+       padding: 8px 0 2px;
+       font-size: 14px;
+       color: var(--pd-text);
+   }
+   
+   .info-group input,
+   .info-group select,
+   .info-group textarea {
+       font-family: inherit;
+       font-size: 14px;
+       color: var(--pd-text);
+       background: var(--pd-surface);
+       border: 1px solid var(--pd-border-strong);
+       border-radius: var(--pd-radius-sm);
+       padding: 8px 10px;
+       width: 100%;
+   }
+   
+   .info-group input:focus,
+   .info-group select:focus,
+   .info-group textarea:focus {
+       outline: none;
+       border-color: var(--pd-navy);
+       box-shadow: 0 0 0 3px rgba(26, 38, 91, 0.1);
+   }
+   
+   .info-group textarea {
+       min-height: 72px;
+       resize: vertical;
+   }
+   
+   /* Checkbox baris: kembalikan ke ukuran wajar & sejajar kiri, bukan mengikuti
+      lebar 100% seperti input teks. */
+   .info-group input[type="checkbox"] {
+       width: 18px;
+       height: 18px;
+       margin-top: 6px;
+       accent-color: var(--pd-navy);
+       cursor: pointer;
+   }
+   
+   /* ─── Empty / muted notes ──────────────────────────────────────────────── */
+   
+   .empty-note {
+       margin: 0;
+       color: var(--pd-text-muted);
+       font-size: 13.5px;
+   }
+   
+   .muted-note {
+       color: var(--pd-text-muted);
+       font-size: 13.5px;
+   }
+   
+   /* ─── Tables (Vendor Pricing / Sales Price) ────────────────────────────── */
+   
+   .modern-table {
+       width: 100%;
+       border-collapse: collapse;
+       font-size: 13.5px;
+   }
+   
+   .modern-table thead th {
+       text-align: left;
+       font-size: 12px;
+       font-weight: 700;
+       text-transform: none;
+       color: var(--pd-text-muted);
+       background: var(--pd-bg);
+       border-bottom: 1px solid var(--pd-border);
+       padding: 10px 12px;
+   }
+   
+   .modern-table tbody td {
+       padding: 8px 12px;
+       border-bottom: 1px solid var(--pd-border);
+       vertical-align: middle;
+   }
+   
+   .modern-table tbody tr:hover {
+       background: #fafbfc;
+   }
+   
+   .modern-table tbody tr:last-child td {
+       border-bottom: none;
+   }
+   
+   .modern-table input {
+       font-family: inherit;
+       font-size: 13.5px;
+       border: 1px solid var(--pd-border-strong);
+       border-radius: var(--pd-radius-sm);
+       padding: 6px 8px;
+       width: 100%;
+       background: var(--pd-surface);
+       color: var(--pd-text);
+   }
+   
+   .modern-table input:focus {
+       outline: none;
+       border-color: var(--pd-navy);
+       box-shadow: 0 0 0 3px rgba(26, 38, 91, 0.1);
+   }
+   
+   .row-actions {
+       display: flex;
+       gap: 6px;
+       white-space: nowrap;
+   }
+   
+   .icon-btn {
+       padding: 6px 9px;
+       line-height: 1;
+       border-radius: var(--pd-radius-sm);
+       background: var(--pd-surface);
+       border: 1px solid var(--pd-border-strong);
+   }
+   
+   .icon-btn-save:hover:not(:disabled) {
+       border-color: var(--pd-navy);
+       background: var(--pd-success-bg);
+   }
+   
+   .icon-btn-delete:hover:not(:disabled) {
+       border-color: var(--pd-danger);
+       background: var(--pd-danger-bg);
+   }
+   
+   /* ─── Inline "tambah baris baru" controls ──────────────────────────────── */
+   
+   .inline-add-box {
+       position: relative;
+       max-width: 320px;
+       margin-top: 14px;
+   }
+   
+   .inline-add-box-select {
+       max-width: 280px;
+   }
+   
+   .vendor-search-input {
+       width: 100%;
+       font-family: inherit;
+       font-size: 13.5px;
+       border: 1px solid var(--pd-border-strong);
+       border-radius: var(--pd-radius-sm);
+       padding: 8px 10px;
+       background: var(--pd-surface);
+       color: var(--pd-text);
+   }
+   
+   .vendor-search-input:focus {
+       outline: none;
+       border-color: var(--pd-navy);
+       box-shadow: 0 0 0 3px rgba(26, 38, 91, 0.1);
+   }
+   
+   .add-price-select {
+       width: 100%;
+       font-family: inherit;
+       font-size: 13.5px;
+       border: 1px solid var(--pd-border-strong);
+       border-radius: var(--pd-radius-sm);
+       padding: 8px 10px;
+       background: var(--pd-surface);
+       color: var(--pd-text);
+   }
+   
+   .suggestions-dropdown {
+       position: absolute;
+       top: calc(100% + 4px);
+       left: 0;
+       right: 0;
+       z-index: 5;
+       background: var(--pd-surface);
+       border: 1px solid var(--pd-border);
+       border-radius: var(--pd-radius-sm);
+       box-shadow: 0 8px 20px rgba(20, 24, 40, 0.08);
+       max-height: 220px;
+       overflow-y: auto;
+   }
+   
+   .suggestion-item {
+       padding: 8px 12px;
+       font-size: 13.5px;
+       cursor: pointer;
+       border-bottom: 1px solid var(--pd-border);
+   }
+   
+   .suggestion-item:last-child {
+       border-bottom: none;
+   }
+   
+   .suggestion-item:hover {
+       background: var(--pd-bg);
+   }
+   
+   /* ─── Success modal — border-box only; SuccessModal punya markup sendiri,
+      ini jaga-jaga kalau butuh selector fallback. ─────────────────────────── */
+   
+   .card-container :focus-visible {
+       outline: 2px solid var(--pd-navy);
+       outline-offset: 2px;
+   }
+   
+   /* ─── Responsive ───────────────────────────────────────────────────────── */
+   
+   @media (max-width: 640px) {
+       .card-container {
+           padding: 16px 14px 32px;
+       }
+   
+       .detail-topbar {
+           flex-wrap: wrap;
+       }
+   
+       .detail-grid {
+           grid-template-columns: 1fr;
+       }
+   
+       .detail-section {
+           padding: 16px;
+       }
+   }
+  /* ─── Flexible Grid System untuk Checkbox Group ───────────────────────── */
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Membagi 2 kolom sejajar simetris */
+    gap: 12px 16px;
+    margin: 16px 0 8px 0;
+    padding: 12px;
+    background: var(--pd-bg);
+    border: 1px solid var(--pd-border);
+    border-radius: var(--pd-radius-sm);
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Menjaga label di kiri dan checkbox/teks di kanan */
+    gap: 8px;
+}
+
+.checkbox-item label {
+    margin-top: 0 !important; /* Timpa margin-top bawaan .info-group label */
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--pd-text);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.checkbox-item span {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--pd-navy);
+}
+
+/* Reset margin-top bawaan input checkbox agar sejajar tegak lurus */
+.info-group .checkbox-item input[type="checkbox"] {
+    margin-top: 0;
+    cursor: pointer;
+}

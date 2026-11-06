@@ -1,0 +1,262 @@
+/* ── DashboardMenu.css ──────────────────────────────────────────────────── */
+
+.dashboard-root {
+  height: 100%;
+  background: #dedede;
+  display: flex;
+  flex-direction: column;
+  border-radius: 15px;
+  overflow-y: auto;
+}
+/* Pastikan container utama membentang penuh */
+.dashboard-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: start; /* Membuat semua isi di dalam dashboard-welcome berada di tengah */
+  text-align: center;
+}
+
+.welcome-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Memastikan isi flexbox berada di tengah */
+  gap: 16px;           /* Jarak antara icon dan judul */
+  margin-bottom: 2px; 
+}
+
+.welcome-header-top .welcome-title {
+  margin: 0; 
+}
+/* Pastikan banner kembali membentang penuh (lebar 100%) */
+.report-active-banner {
+  width: 100%;
+  /* Tambahkan properti flex/layout banner Anda yang sebelumnya di sini jika ada */
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Header Area (Khas Menu Laporan) ────────────────────────────────────── */
+.welcome-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #1e2a4a, #252d4a);
+  border: 1px solid #2a3555;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  color: #6366f1;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+}
+
+.welcome-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #00d1b2;
+  line-height: 1.3;
+  margin: 0 0 12px;
+  letter-spacing: -0.5px;
+}
+
+.welcome-title em {
+  font-style: normal;
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.welcome-sub {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0 0 24px;
+  line-height: 1.6;
+}
+
+.welcome-sub strong {
+  color: #94a3b8;
+}
+
+/* ── Active Page Indicator Banner ───────────────────────────────────────── */
+.report-active-banner {
+  background: rgb(22 29 43);
+  border: 1px solid rgba(0, 209, 178, 0.25);
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.report-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #00d1b2;
+  font-weight: 600;
+}
+
+.report-banner-badge {
+  background: #00d1b2;
+  color: #0b0e17;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Section Menu Grid ──────────────────────────────────────────────────── */
+.ds-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--section-count, 3), 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.ds-menu-column {
+  border-radius: 12px;
+  padding: 20px;
+  background: #111827;
+  border: 1px solid #1e2a3a;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ds-menu-column:hover {
+  border-color: #2a3d58;
+}
+
+.ds-menu-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #1e2a3a;
+}
+
+.ds-menu-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #00d1b2;
+}
+
+/* ── Item Laporan (Link Cards) ─────────────────────────────────────────── */
+.ds-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.ds-menu-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.ds-menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #64748b;
+  transition: color 0.15s ease;
+}
+
+.ds-menu-item-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ds-menu-arrow {
+  font-size: 12px;
+  color: #475569;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all 0.15s ease;
+}
+
+/* State Hover & Active Laporan */
+.ds-menu-item:hover {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+.ds-menu-item:hover .ds-menu-icon {
+  color: #6366f1;
+}
+
+.ds-menu-item:hover .ds-menu-arrow {
+  opacity: 1;
+  transform: translateX(0);
+  color: #6366f1;
+}
+
+/* Penanda link Laporan Aktif yang sedang dibuka */
+.ds-menu-item.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(59, 130, 246, 0.1));
+  color: #ffffff;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  font-weight: 600;
+}
+
+.ds-menu-item.active .ds-menu-icon {
+  color: #6366f1;
+}
+
+.ds-menu-item.active::after {
+  content: "Active";
+  font-size: 9px;
+  background: #6366f1;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .ds-menu-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .ds-menu-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .report-active-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

@@ -1,0 +1,715 @@
+/* ==========================================
+   1. MODAL & OVERLAY STYLES (.frm-*)
+   ========================================== */
+   .frm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(17, 24, 39, 0.4);
+    backdrop-filter: blur(4px);
+    padding: 16px;
+  }
+  
+  .frm-modal {
+    width: 100%;
+    max-width: 32rem;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+  }
+  
+  /* Header Modal */
+  .frm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid #f3f4f6;
+    background: #fafafa;
+  }
+  
+  .frm-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .frm-icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  
+  .frm-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+  }
+  
+  .frm-subtitle {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 2px 0 0;
+  }
+  
+  .frm-close-btn {
+    padding: 6px;
+    border-radius: 8px;
+    color: #9ca3af;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  
+  .frm-close-btn:hover {
+    background: #f3f4f6;
+    color: #4b5563;
+  }
+  
+  /* Body Modal */
+  .frm-body {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .frm-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #4b5563;
+  }
+  
+  /* Selection Grid & Option Buttons */
+  .frm-type-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  @media (min-width: 640px) {
+    .frm-type-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  
+  .frm-type-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  
+  .frm-type-btn:hover {
+    border-color: #d1d5db;
+    background: #fafafa;
+  }
+  
+  .frm-type-btn.selected {
+    border-color: #2563eb;
+    background: rgba(239, 246, 255, 0.6);
+    box-shadow: 0 0 0 1px #2563eb;
+  }
+  
+  .frm-type-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+  }
+  
+  .frm-type-name.selected {
+    color: #1e3a8a;
+  }
+  
+  .frm-type-desc {
+    font-size: 11px;
+    color: #6b7280;
+    margin: 2px 0 0;
+  }
+  
+  /* Radio Custom Component */
+  .frm-radio {
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    border: 1px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  .frm-radio.selected {
+    border-color: #2563eb;
+    background: #2563eb;
+  }
+  
+  .frm-radio-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #fff;
+  }
+  
+  /* Date Section */
+  .frm-date-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-radius: 12px;
+    border: 1px solid #f3f4f6;
+    background: rgba(249, 250, 251, 0.3);
+    padding: 16px;
+  }
+  
+  .frm-date-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  @media (min-width: 640px) {
+    .frm-date-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  
+  .frm-field-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+  }
+  
+  /* Inputs & Selects */
+  .frm-input,
+  .frm-select {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #1f2937;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+  
+  .frm-select {
+    cursor: pointer;
+  }
+  
+  .frm-input:focus,
+  .frm-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+  
+  .frm-select:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    background: #f9fafb;
+  }
+  
+  .frm-select-badge {
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    background: #eff6ff;
+    border: 1px solid #dbeafe;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #2563eb;
+  }
+  
+  .frm-select-badge.unknown {
+    background: #fef9c3;
+    border-color: #fef08a;
+    color: #a16207;
+  }
+  
+  .frm-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    color: #6b7280;
+  }
+  
+  .frm-info svg {
+    margin-top: 2px;
+    flex-shrink: 0;
+    color: #3b82f6;
+  }
+  
+  /* Footer Modal */
+  .frm-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px 24px;
+    border-top: 1px solid #f3f4f6;
+    background: #fafafa;
+  }
+  
+  .frm-btn-cancel {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  
+  .frm-btn-cancel:hover {
+    background: #f9fafb;
+  }
+  
+  .frm-btn-apply {
+    border-radius: 8px;
+    border: none;
+    background: #2563eb;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  
+  .frm-btn-apply:hover {
+    background: #1d4ed8;
+  }
+  
+  .frm-btn-apply:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  
+  
+  /* ==========================================
+     2. REPORT PAGE STYLES (.frp-*)
+     ========================================== */
+  .frp-page {
+    width: 96%;
+    margin: 0 auto;
+    padding: 24px;
+    background: #fafafa;
+  }
+  
+  /* Toolbar */
+  .frp-toolbar {
+    margin-bottom: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    padding: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+  
+  .frp-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .frp-toolbar-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #2563eb;
+    flex-shrink: 0;
+  }
+  
+  .frp-toolbar-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+  }
+  
+  .frp-toolbar-subtitle {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 2px 0 0;
+  }
+  
+  .frp-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .frp-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    border: none;
+    background: #2563eb;
+    padding: 9px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: background 0.15s;
+  }
+  
+  .frp-btn-primary:hover {
+    background: #1d4ed8;
+  }
+  
+  .frp-secondary-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 10px;
+    border-left: 1px solid #e5e7eb;
+  }
+  
+  .frp-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    padding: 8px 14px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: background 0.15s, color 0.15s;
+  }
+  
+  .frp-btn-secondary:hover {
+    background: #f9fafb;
+    color: #111827;
+  }
+  
+  /* Page States (Empty, Loading, Error) */
+  .frp-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: 16px;
+    border: 1px solid #eef0f3;
+    background: #fff;
+    padding: 56px 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+  
+  .frp-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #3b82f6;
+    margin-bottom: 16px;
+  }
+  
+  .frp-empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+  }
+  
+  .frp-empty-desc {
+    margin: 6px 0 0;
+    max-width: 22rem;
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
+  }
+  
+  .frp-empty-btn {
+    margin-top: 20px;
+    border-radius: 8px;
+    border: none;
+    background: #2563eb;
+    padding: 9px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    transition: background 0.15s;
+  }
+  
+  .frp-empty-btn:hover {
+    background: #1d4ed8;
+  }
+  
+  .frp-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    border: 1px solid #f3f4f6;
+    background: #fff;
+    padding: 64px 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+  
+  .frp-loading-text {
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #4b5563;
+  }
+  
+  .frp-spin {
+    animation: frp-spin 1s linear infinite;
+    color: #2563eb;
+  }
+  
+  @keyframes frp-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .frp-error {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 12px;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    padding: 16px;
+    color: #b91c1c;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+  
+  .frp-error-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin: 0;
+  }
+  
+  .frp-error-msg {
+    font-size: 12px;
+    color: #dc2626;
+    margin: 2px 0 0;
+  }
+  
+  /* Document View */
+  .frp-doc {
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+  
+  .frp-doc-header {
+    position: relative;
+    border-bottom: 1px solid #f3f4f6;
+    background: #fafafa;
+    padding: 24px;
+    text-align: center;
+  }
+  
+  .frp-org-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .frp-org-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    border-radius: 6px;
+  }
+  
+  .frp-org-logo-corner {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    border-radius: 8px;
+  }
+  
+  .frp-org-text {
+    text-align: left;
+  }
+      
+  .frp-org-contact {
+    font-size: 11px;
+    color: #6b7280;
+    margin: 1px 0 0;
+  }
+  
+  .frp-doc-title {
+    font-size: 19px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #111827;
+    margin: 0;
+  }
+  
+  .frp-doc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #4b5563;
+  }
+  
+  .frp-doc-body {
+    padding: 24px;
+  }
+  
+  /* Data Table Component */
+  .frp-table {
+    width: 100%;
+    font-size: 14px;
+    border-collapse: collapse;
+  }
+  
+  .frp-table thead tr {
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .frp-table th {
+    padding-bottom: 8px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+}
+
+.frp-table th:last-child {
+    text-align: right;
+}
+
+.frp-table tbody tr {
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.15s;
+}
+
+.frp-table tbody tr:hover {
+    background: rgba(249, 250, 251, 0.6);
+}
+
+.frp-table tbody tr.total-line {
+    background: rgba(249, 250, 251, 0.8);
+    font-weight: 700;
+    color: #111827;
+}
+
+.frp-table td {
+    padding: 1px 0;
+    color: #374151;
+}
+
+.frp-table td.name-cell {
+    text-align: right;
+    padding: 3px 10px 0px 0px;
+}
+
+.frp-table td.name-cell.total {
+    padding-left: 12px;
+    font-weight: 600;
+}
+
+.frp-table td.desc-cell {
+    text-align: left;
+    color: #6b7280;
+    font-size: 13px;
+    padding-right: 20px;
+}
+
+.frp-table td.desc-cell.total {
+    font-weight: 600;
+    color: #374151;
+}
+
+.frp-table td.amount-cell {
+    padding-right: 20px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: #1f2937;
+}
+
+.frp-table td.amount-cell.total {
+    font-weight: 700;
+    color: #111827;
+}
+
+.frp-doc-footer {
+    border-top: 1px solid #f3f4f6;
+    padding: 12px 24px;
+    background: rgba(249, 250, 251, 0.5);
+    text-align: right;
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.frp-org-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #04256b;
+    margin: 0;
+    text-transform: uppercase;
+}

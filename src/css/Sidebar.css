@@ -1,0 +1,270 @@
+/* Secara default (untuk layar mobile/kecil), panel kiri disembunyikan */
+.side-panel-left {
+  display: none;
+}
+
+/* Ketika lebar layar mencapai 768px atau lebih (Tablet/Desktop), panel kiri ditampilkan */
+@media (min-width: 768px) {
+  .side-panel-left {
+    display: block; /* atau display: flex; sesuai kebutuhan layout */
+  }
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #0F172A;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden; 
+    position: relative;
+    top: 0;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    z-index: 200;
+  }
+  
+  .sidebar-brand {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-brand.collapsed {
+    width: 80px;
+    background-color: #0F172A;
+    border-radius: 0 20px 20px 0;
+    position: relative; /* atau 'absolute' jika ingin ikut tergulung saat scroll */
+    left: 0;
+    top: 5px; /* Sesuaikan dengan margin-top milik header Anda */
+    z-index: auto;
+  }
+  .brand-icon {
+    color: #00d1b2;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-weight: bold;
+    background-color: #0F172A;
+  }
+  
+  .sidebar-nav {
+    padding: 15px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex:1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    scrollbar-width: thin;                  /* thin | auto | none */
+    scrollbar-color: #00d1b2 transparent;   /* warna thumb, warna track */
+  }
+  /* opsional: styling scrollbar biar lebih rapi */
+  .sidebar-nav::-webkit-scrollbar {
+    width: 6px;
+  }
+  .sidebar-nav::-webkit-scrollbar-thumb {
+    background: #1f78e6;
+    border-radius: 3px;
+  }
+  .sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    color: #bdc3c7;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+  }
+  
+  .nav-item:hover {
+    background-color: rgba(255,255,255,0.05);
+    color: white;
+  }
+  
+  .nav-item.active {
+    background-color: #34495e;
+    color: #00d1b2;
+    border-left: 4px solid #00d1b2;
+    font-weight: 600;
+  }
+  
+  .nav-item svg {
+    transition: transform 0.3s ease;
+  }
+  
+  .nav-item:hover svg {
+    transform: translateX(3px);
+  }
+  /* Container untuk Hamburger dan Brand */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  background-color: #0F172A ;
+  flex-shrink: 0;
+}
+
+/* Desain Tombol Hamburger */
+.hamburger-btn {
+  background: none;
+  border: none;
+  color: white; /* Sesuaikan dengan tema warna Anda */
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.hamburger-btn:hover {
+  opacity: 0.8;
+}
+
+/* Pengaturan Struktur Dasar Sidebar */
+.sidebar {
+  width: 210px;
+  height: 100vh;
+  transition: width 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ketika Sidebar Mengecil */
+.sidebar.collapsed {
+  width: 50px;
+}
+
+.sidebar.collapsed .sidebar-header {
+  flex-direction: column; /* Susun vertikal antara hamburger dan logo iD */
+  padding: 6px 0;
+  gap: 8px;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+/* Pastikan ukuran icon tetap konsisten */
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+}
+/* Gaya untuk garis pembatas */
+.sidebar-divider {
+  border: 0;
+  border-top: 1px solid #e2e8f0; /* warna garis samar */
+  margin: 12px 16px;
+}
+
+/* Gaya untuk teks judul kelompok menu */
+.sidebar-section-title {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #94a3b8; /* warna teks abu-abu redup */
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 4px 16px;
+  margin-bottom: 4px;
+}
+
+/* Menghilangkan sedikit padding/margin jika sidebar dalam posisi collapsed */
+.sidebar.collapsed .sidebar-divider {
+  margin: 12px 8px;
+}
+/* Tooltip untuk sidebar collapsed */
+.nav-item {
+  position: relative; /* wajib, jadi anchor untuk tooltip absolute */
+}
+
+.sidebar.collapsed .nav-item::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-6px);
+  background: #1e293b;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Panah kecil penunjuk ke arah sidebar */
+.sidebar.collapsed .nav-item::before {
+  content: '';
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: #1e293b;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.sidebar.collapsed .nav-item:hover::after,
+.sidebar.collapsed .nav-item:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+/* Header section yang bisa diklik untuk collapse/expand */
+.sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.sidebar-section-header:hover .sidebar-section-title {
+  color: #1e293b; /* sesuaikan dengan warna hover yang kamu pakai di tempat lain */
+}
+
+/* Chevron — rotasi 180° saat section tertutup */
+.section-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.section-chevron.closed {
+  transform: rotate(-90deg);
+}

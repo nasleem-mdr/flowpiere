@@ -1,0 +1,114 @@
+/* WorkflowApproval.css */
+.wf-page { display: flex; flex-direction: column; gap: 14px; height: 100%; }
+.wf-page__header { display: flex; justify-content: space-between; align-items: center; }
+.wf-page__title { margin: 0; font-size: 20px; font-weight: 700; color: #111827; }
+.wf-page__sub { margin: 2px 0 0; font-size: 12px; color: #9ca3af; }
+
+.wf-layout { display: grid; grid-template-columns: 360px 1fr; gap: 16px; align-items: start; }
+.wf-list { display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 200px); overflow-y: auto; padding-right: 4px; }
+.wf-search { padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 13px; outline: none; }
+.wf-search:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px #eff6ff; }
+
+.wf-card { text-align: left; background: #fff; border: 1px solid #eef0f3; border-radius: 14px; padding: 14px; cursor: pointer; transition: all .15s ease; box-shadow: 0 1px 3px rgba(0,0,0,.04); font-family: inherit; }
+.wf-card:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.08); }
+.wf-card--selected { border-color: #3b82f6; box-shadow: 0 0 0 3px #eff6ff; }
+.wf-card__top { display: flex; justify-content: space-between; align-items: center; }
+.wf-card__node { font-size: 13px; font-weight: 600; color: #111827; }
+.wf-card__priority { width: 18px; height: 18px; border-radius: 50%; background: #fee2e2; color: #dc2626; font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.wf-card__summary { margin: 6px 0; font-size: 12.5px; color: #4b5563; line-height: 1.45; }
+.wf-card__meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.wf-card__foot { display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; color: #9ca3af; }
+.wf-card__cta { color: #3b82f6; font-weight: 600; }
+
+.wf-chip { font-size: 10.5px; padding: 2px 8px; border-radius: 99px; background: #f3f4f6; color: #4b5563; font-weight: 500; }
+.wf-badge { font-size: 10.5px; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+.wf-badge--approval { background: #eff6ff; color: #1d4ed8; }
+.wf-badge--confirm { background: #fefce8; color: #a16207; }
+.wf-badge--choice { background: #f5f3ff; color: #6d28d9; }
+
+.wf-pane { background: #fff; border: 1px solid #eef0f3; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+.wf-detail { display: flex; flex-direction: column; max-height: calc(100vh - 200px); }
+.wf-detail__scroll { overflow-y: auto; padding: 20px; flex: 1; }
+.wf-detail__head { display: flex; justify-content: space-between; gap: 12px; }
+.wf-detail__eyebrow { margin: 0; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: #9ca3af; }
+.wf-detail__title { margin: 4px 0 2px; font-size: 17px; font-weight: 700; color: #111827; }
+.wf-detail__sub { margin: 0; font-size: 12px; color: #9ca3af; }
+.wf-detail__desc { margin: 12px 0 0; font-size: 13px; color: #6b7280; line-height: 1.55; background: #f9fafb; border-radius: 10px; padding: 12px 14px; }
+.wf-iconbtn { border: none; background: #f3f4f6; border-radius: 10px; width: 32px; height: 32px; cursor: pointer; color: #6b7280; flex-shrink: 0; }
+
+.wf-detail__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px; }
+.wf-detail__cell { background: #f9fafb; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.wf-detail__label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: #9ca3af; }
+.wf-detail__value { font-size: 14px; font-weight: 600; color: #1f2937; }
+
+.wf-detail__tablewrap { margin-top: 16px; border: 1px solid #f3f4f6; border-radius: 1px; overflow: auto; }
+.wf-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.wf-table th { background: #f9fafb; text-align: left; padding: 10px 12px; color: #6b7280; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.wf-table td { padding: 10px 12px; border-top: 1px solid #f3f4f6; color: #1f2937; }
+.wf-num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.wf-history { margin-top: 16px; }
+.wf-history__toggle { background: none; border: none; font-size: 12.5px; color: #3b82f6; cursor: pointer; font-weight: 600; padding: 0; }
+.wf-history__body { margin-top: 8px; font-size: 12px; color: #4b5563; background: #f9fafb; border-radius: 10px; padding: 12px 14px; overflow-x: auto; }
+
+.wf-detail__actions { display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid #f3f4f6; background: #fff; position: sticky; bottom: 0; }
+
+.wf-btn { border: none; border-radius: 12px; padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+.wf-btn:disabled { opacity: .5; cursor: not-allowed; }
+.wf-btn--success { background: #16a34a; color: #fff; }
+.wf-btn--danger { background: #dc2626; color: #fff; }
+.wf-btn--primary { background: #2563eb; color: #fff; }
+.wf-btn--ghost { background: #f3f4f6; color: #374151; }
+.wf-btn--soft { background: #eff6ff; color: #1d4ed8; }
+
+.wf-modal__backdrop { position: fixed; inset: 0; background: rgba(17,24,39,.45); backdrop-filter: blur(3px); display: grid; place-items: center; z-index: 100; }
+.wf-modal { width: 100%; max-width: 620px; background: #fff; border-radius: 5px; padding: 24px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,.2); }
+.wf-modal--wide { max-width: 680px; }
+.wf-modal__accent { position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: 5px 5px 0 0; }
+.wf-modal__accent--success { background: #16a34a; }
+.wf-modal__accent--danger { background: #dc2626; }
+.wf-modal__accent--neutral { background: #2563eb; }
+.wf-modal__title { margin: 0; font-size: 16px; font-weight: 700; color: #111827; }
+.wf-modal__subtitle { margin: 6px 0 14px; font-size: 12.5px; color: #6b7280; line-height: 1.5; }
+.wf-modal__label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+.wf-modal__textarea, .wf-modal__input { width: 100%; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; font-size: 13px; font-family: inherit; resize: vertical; outline: none; }
+.wf-modal__textarea:focus, .wf-modal__input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px #eff6ff; }
+.wf-modal__hint { font-size: 11.5px; color: #9ca3af; margin: 8px 0 0; }
+.wf-modal__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+.wf-forward__searchrow { display: flex; gap: 8px; }
+.wf-forward__list { margin: 12px 0; max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.wf-forward__item { display: flex; flex-direction: column; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid #eef0f3; background: #fff; cursor: pointer; font-family: inherit; }
+.wf-forward__item--active { border-color: #3b82f6; background: #eff6ff; }
+.wf-forward__name { font-size: 13px; font-weight: 600; color: #111827; }
+.wf-forward__sub { font-size: 11.5px; color: #9ca3af; }
+.wf-forward__empty { font-size: 12.5px; text-align: center; padding: 12px; }
+
+.wf-state { text-align: center; color: #9ca3af; font-size: 13px; padding: 24px 12px; }
+.wf-state--error, .wf-error-text { color: #dc2626; font-size: 12.5px; }
+.wf-banner { padding: 10px 14px; border-radius: 10px; font-size: 12.5px; }
+.wf-banner--error { background: #fef2f2; color: #b91c1c; }
+.wf-muted { color: #9ca3af; font-weight: 400; }
+
+.wf-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 5px; font-size: 13px; font-weight: 600; color: #fff; z-index: 200; box-shadow: 0 10px 30px rgba(0,0,0,.2); }
+.wf-toast--success { background: #16a34a; }
+
+@media (max-width: 900px) {
+  .wf-layout { grid-template-columns: 1fr; }
+  .wf-list { max-height: none; }
+  .wf-pane { display: none; position: fixed; inset: 0; z-index: 90; border-radius: 0; overflow-y: auto; }
+  .wf-pane--open { display: block; }
+  .wf-detail { max-height: none; }
+}
+
+/* Pastikan kelas ini ada di file CSS Anda */
+.wf-row--clickable {
+  cursor: pointer;
+  /* Tambahan opsional agar interaksi terasa lebih responsif */
+  transition: background-color 0.2s ease; 
+}
+
+/* Opsional: Memberikan efek hover agar baris terlihat jelas bisa diklik */
+.wf-row--clickable:hover {
+  background-color: #f1f5f9; /* Sesuaikan dengan warna tema aplikasi Anda */
+}

@@ -1,0 +1,55 @@
+/* Container Tooltip */
+.custom-tooltip {
+    position: relative;
+  }
+  
+  /* Teks Tooltip (Multi-line) */
+  .custom-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%; /* Posisikan di atas tombol */
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px);
+    background-color: #0545ac; /* Warna latar gelap */
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1; 
+    width: max-content;
+    max-width: 220px; 
+    white-space: pre-line;
+    text-align: center;   
+  
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 99;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Segitiga Panah Kecil */
+.custom-tooltip::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 8px; /* 🔑 Diubah dari 5px ke 8px */
+    border-style: solid;
+    border-color: #1e293b transparent transparent transparent;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease;
+    z-index: 99;
+  }
+  
+  /* Tampilkan saat tombol di-hover */
+  .custom-tooltip:hover::after,
+  .custom-tooltip:hover::before {
+    opacity: 1;
+    visibility: visible;
+  }

@@ -1,0 +1,209 @@
+/* Container Utama Halaman */
+.card-container {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    margin-bottom: 20px;
+  }
+  
+  /* Modifikasi Page Header (Judul & Search) */
+/* Modifikasi Page Header (Judul di Kiri, Search di Kanan) */
+.page-header-container {
+    display: flex;
+    justify-content: space-between; /* Melempar search box ke pojok kanan */
+    align-items: center;
+    margin-bottom: 28px; /* Memberikan ruang/jarak ke area tabel di bawahnya */
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f1f5f9; /* Garis pemisah tipis yang estetis */
+    gap: 24px; /* Ruang aman jika teks judul sangat panjang */
+  }
+  .page-header-left {
+    display: flex;
+    gap: 8px; /* Ubah jadi 0px jika ingin benar-benar dempet tanpa jarak */
+  }
+  .page-header-title {
+    margin: 0;
+    font-size: 1.6rem;
+    color: #1e293b; /* Warna teks yang lebih tegas dan modern */
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  
+  /* Desain Search Box Baru (Tidak Flat & Berdimensi) */
+  .page-header-search {
+    padding: 11px 18px;
+    border-radius: 10px; /* Sudut yang lebih lembut */
+    border: 1px solid #cbd5e1; /* Warna border default yang soft */
+    width: 340px;
+    font-size: 0.9rem;
+    background-color: #ffffff;
+    color: #334155;
+    
+    /* Efek dimensi agar tidak flat */
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+  }
+  
+  /* Efek Interaktif saat Search Box diklik (Fokus) */
+  .page-header-search:focus {
+    border-color: #00d1b2;
+    background-color: #ffffff;
+    /* Meningkatkan bayangan (glow) biru/toska transparan */
+    box-shadow: 0 0 0 4px rgba(0, 209, 178, 0.15), 0 4px 6px -1px rgba(0, 209, 178, 0.05);
+    transform: translateY(-1px); /* Efek sedikit terangkat yang responsif */
+  }
+  
+  /* Efek saat Kursor Melewatinya */
+  .page-header-search:hover:not(:focus) {
+    border-color: #94a3b8;
+  }
+  
+  /* placeholder style */
+  .page-header-search::placeholder {
+    color: #94a3b8;
+    font-style: italic;
+  }
+  
+  
+  /* Desain Tabel Modern */
+  .table-card {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .modern-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.95rem;
+  }
+  
+  .modern-table th {
+    background-color: #f8fafc;
+    color: #64748b;
+    padding: 14px 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  
+  .modern-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: middle;
+  }
+  
+  .modern-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  
+  .modern-table tbody tr:hover {
+    background-color: #f8fafc;
+  }
+  
+  /* Tombol Aksi & Navigasi */
+  .btn-action-view {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+  
+  .btn-action-view:hover {
+    background-color: #2980b9;
+  }
+  
+  .pagination-container {
+    padding: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px solid #e2e8f0;
+    background-color: #ffffff;
+  }
+  
+  .btn-pagination {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid #00d1b2;
+    background-color: #ffffff;
+    color: #00d1b2;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+  
+  .btn-pagination:hover:not(:disabled) {
+    background-color: #00d1b2;
+    color: white;
+  }
+  
+  .btn-pagination:disabled {
+    border-color: #cbd5e1;
+    color: #94a3b8;
+    cursor: not-allowed;
+  }
+  
+  .pagination-info {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+  
+  /* State Loading */
+  .loading-state {
+    padding: 40px;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+  /* Custom Styling untuk Tombol Icon Pagination */
+.btn-pagination-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #374151; /* Warna Icon saat aktif (Hitam/Abu Gelap) */
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-pagination-icon:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  color: #1d4ed8; /* Warna saat di-hover */
+  border-color: #9ca3af;
+}
+
+.btn-pagination-icon:disabled {
+  color: #d1d5db; /* Warna Icon saat disabled (Abu Pudar) */
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Memastikan SVG di dalam tombol mengambil warna parent (currentColor) */
+.btn-pagination-icon svg {
+  display: block;
+  stroke: currentColor;
+}
+  

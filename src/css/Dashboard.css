@@ -1,0 +1,353 @@
+/* ── Dashboard.css ──────────────────────────────────────────────────────── */
+.welcome-card-link--disabled {
+  opacity: 0.45;
+  filter: grayscale(1);
+  cursor: not-allowed;
+  user-select: none;
+}
+.welcome-card-link--disabled .welcome-card {
+  pointer-events: none;   /* matikan efek hover/transform kartu */
+}
+.dashboard-root {
+  height: 100%;
+  background: #dedede;
+  display: flex;
+  flex-direction: column;
+  border-radius: 15px;
+  overflow-y: auto;
+}
+
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 28px 16px;
+}
+
+.dashboard-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+  max-width: 1200px;
+  width: 100%;
+  gap: 24px;
+  animation: fadeUp 0.4s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.welcome-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #1e2a4a, #252d4a);
+  border: 1px solid #2a3555;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  color: #6366f1;
+}
+
+.welcome-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #e2e8f0;
+  line-height: 1.3;
+  margin: 0 0 12px;
+  letter-spacing: -0.5px;
+}
+
+.welcome-title em {
+  font-style: normal;
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.welcome-sub {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0 0 36px;
+  line-height: 1.6;
+}
+
+.welcome-sub strong {
+  color: #94a3b8;
+}
+
+/* ── Info cards (5 kolom) ───────────────────────────────────────────────── */
+.welcome-cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.welcome-card {
+  background: #111827;
+  border: 1px solid #1e2a3a;
+  border-radius: 12px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.15s;
+}
+
+.welcome-card:hover {
+  border-color: #3b4f6e;
+}
+
+.welcome-card-icon {
+  font-size: 22px;
+  line-height: 1;
+  color: #00d1b2;
+  width: 42px;
+  height: 42px;
+}
+
+.welcome-card-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #475569;
+}
+
+.welcome-card-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.welcome-card-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-align: center;
+  word-break: break-word;
+}
+
+/* ── DashboardStats container ───────────────────────────────────────────── */
+.ds-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;                          /* sama dengan welcome-cards */
+  width: 100%;
+}
+
+.ds-banner {
+  grid-column: 1 / -1;
+  background: #111827;                /* seragam dengan welcome-card */
+  border: 1px solid #1e2a3a;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #00d1b2;                     /* warna aksen sama dengan welcome-card-icon */
+  text-align: left;
+}
+
+/* ── Stat card — seragam dengan welcome-card ────────────────────────────── */
+.ds-card {
+  background: #111827;
+  border: 1px solid #1e2a3a;
+  border-radius: 12px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s;
+}
+
+.ds-card:hover {
+  border-color: #3b4f6e;
+}
+
+.ds-card-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center; /* 🟢 MEMBUAT SEMUA ELEMEN DI TENGAH SECARA HORIZONTAL */
+  gap: 6px;
+  row-gap: 4px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #94a3b8;
+  text-align: center;      /* Menjaga fallback jika flexbox wrap bertingkah */
+  width: 100%;             /* Memastikan title menggunakan lebar penuh kartu */
+}
+
+/* Mengatur label baris kedua agar turun dan teksnya pas di tengah */
+.ds-card-title .ds-card-period {
+  flex-basis: 100%;        /* Memaksa turun ke baris baru */
+  text-align: center;      /* 🟢 Memastikan teks di baris kedua ini berada di tengah */
+  font-weight: 400;        /* (Opsional) membuat teks bulan ini sedikit lebih tipis agar rapi */
+  font-size: 11px;         /* (Opsional) ukurannya disesuaikan */
+}
+.ds-card-period {
+  font-weight: 400;
+  font-size: 10px;
+  color: #475569;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ── Status row ─────────────────────────────────────────────────────────── */
+.ds-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ds-status-box {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ds-status-count {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ds-status-label {
+  font-size: 9px;
+  color: #475569;
+  text-align: center;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.ds-divider {
+  width: 1px;
+  height: 44px;
+  background: #1e2a3a;
+  flex-shrink: 0;
+}
+
+/* ── Chart labels ───────────────────────────────────────────────────────── */
+.ds-chart-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.ds-chart-label-mt {
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  margin-top: 14px;
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+/* ── States ─────────────────────────────────────────────────────────────── */
+.ds-loading {
+  text-align: center;
+  color: #475569;
+  padding: 24px 0;
+  font-size: 12px;
+}
+
+.ds-empty {
+  text-align: center;
+  color: #374151;
+  padding: 16px 0;
+  font-size: 12px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .ds-container {
+    grid-template-columns: 1fr;
+  }
+  .welcome-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .welcome-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .welcome-title {
+    font-size: 22px;
+  }
+  .ds-container {
+    grid-template-columns: 1fr;
+  }
+}
+/* Grid menu — tiap section jadi 1 kolom, maksimal 3 kolom */
+.ds-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--section-count, 1), 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ds-menu-column {
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: #111827;
+  color: #00d1b2;
+}
+
+.ds-menu-section-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.ds-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #c7cdd6;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.ds-menu-item:hover {
+  background: #07192c;
+}
+
+.ds-menu-item.active {
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 600;
+}
+
+.ds-menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+/* Mobile — turunkan jadi 1 kolom apa pun jumlah section-nya */
+@media (max-width: 768px) {
+  .ds-menu-grid {
+    grid-template-columns: 1fr;
+  }
+}

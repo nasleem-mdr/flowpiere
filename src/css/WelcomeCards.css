@@ -1,0 +1,214 @@
+/* ── WelcomeCards.css ───────────────────────────────────────────────────── */
+.wc-root {
+  --wc-bg-page: #f4f5f7;
+  --wc-ink: #1b1d3a;
+  --wc-muted: #6b7280;
+  --wc-purple: #7b7ff0;
+  --wc-purple-2: #9a9df7;
+
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+  text-align: left;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.wc-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--wc-ink);
+  letter-spacing: -0.3px;
+}
+
+.wc-sub {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--wc-muted);
+}
+
+/* ── Dasar tile ─────────────────────────────────────────────────────────── */
+.wc-tile {
+  position: relative;
+  display: flex;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.wc-tile:focus-visible {
+  outline: 3px solid var(--wc-purple);
+  outline-offset: 3px;
+}
+
+.wc-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.wc-label {
+  font-weight: 600;
+}
+
+/* ── Baris atas: kartu besar berwarna ───────────────────────────────────── */
+.wc-featured {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.wc-tile--featured {
+  height: 200px;
+  align-items: flex-end;
+  padding: 18px 20px;
+  overflow: hidden;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(27, 29, 58, 0.14);
+}
+
+/* bentuk lengkung halus di belakang, seperti sample */
+.wc-tile--featured::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -25%;
+  width: 90%;
+  height: 120%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+}
+
+.wc-tile--featured .wc-icon {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 96px;
+  height: 96px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.wc-tile--featured .wc-label {
+  position: relative;
+  font-size: 17px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.wc-tone-indigo { background: linear-gradient(135deg, #8284f5, #9b9efa); }
+.wc-tone-amber  { background: linear-gradient(135deg, #fbbf3c, #fdcf5f); }
+.wc-tone-blue   { background: linear-gradient(135deg, #4a9ff5, #62b0fa); }
+.wc-tone-pink   { background: linear-gradient(135deg, #de86f0, #ec9bf8); }
+
+.wc-tone-indigo .wc-icon { color: #7b7ff0; }
+.wc-tone-amber  .wc-icon { color: #f5b020; }
+.wc-tone-blue   .wc-icon { color: #3d94f0; }
+.wc-tone-pink   .wc-icon { color: #d578ea; }
+
+/* ── Grid menu lainnya: kartu putih, ikon dalam lingkaran ungu ──────────── */
+.wc-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 24px;
+}
+
+.wc-tile--plain {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 200px;
+  padding: 28px 12px 22px;
+  background: #e6edf3;
+  box-shadow: 0 2px 8px rgba(27, 29, 58, 0.08);
+}
+
+.wc-tile--plain .wc-icon {
+  width: 88px;
+  height: 88px;
+  color: #fff;
+  background: linear-gradient(145deg, var(--wc-purple-2), var(--wc-purple));
+}
+
+.wc-tile--plain .wc-label {
+  font-size: 14px;
+  color: var(--wc-ink);
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ── Hover (hanya yang bisa diklik) ─────────────────────────────────────── */
+a.wc-tile:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 22px rgba(27, 29, 58, 0.16);
+}
+
+/* ── Tanpa akses ────────────────────────────────────────────────────────── */
+.wc-tile--disabled {
+  opacity: 0.45;
+  filter: grayscale(1);
+  cursor: not-allowed;
+  user-select: none;
+}
+
+/* ── Responsif ──────────────────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .wc-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .wc-featured { grid-template-columns: repeat(2, 1fr); }
+  .wc-grid     { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .wc-featured,
+  .wc-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+
+  .wc-tile--featured { height: 160px; }
+  .wc-tile--featured .wc-icon { width: 76px; height: 76px; top: 24px; }
+  .wc-tile--plain { min-height: 160px; }
+  .wc-tile--plain .wc-icon { width: 68px; height: 68px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wc-tile { transition: none; }
+  a.wc-tile:hover { transform: none; }
+}
+
+/* ── Statistik di kartu besar ───────────────────────────────────────────── */
+.wc-footer {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.wc-stats {
+  display: flex;
+  gap: 14px;
+}
+
+.wc-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+}
+
+.wc-stat b {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.wc-stat small {
+  font-size: 11px;
+  opacity: 0.9;
+}

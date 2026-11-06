@@ -1,0 +1,47 @@
+/* Tambahkan ke WorkflowApproval.css (ganti blok .wf-history__body yang lama, sudah tidak dipakai) */
+
+.wf-badge--ok { background: #dcfce7; color: #15803d; }
+.wf-badge--warn { background: #fef9c3; color: #a16207; }
+.wf-badge--bad { background: #fee2e2; color: #b91c1c; }
+
+.wf-tl-card { margin-top: 10px; border: 1px solid #eef0f3; border-radius: 14px; padding: 16px 18px; background: #fff; }
+.wf-tl-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 14px; }
+.wf-tl-title { margin: 0; font-size: 14px; font-weight: 700; color: #111827; }
+
+.wf-tl { list-style: none; margin: 0; padding: 0; }
+.wf-tl__item { position: relative; padding: 0 0 18px 36px; }
+.wf-tl__item:last-child { padding-bottom: 0; }
+
+/* garis penghubung antar titik; hijau untuk segmen yang sudah selesai */
+.wf-tl__item::before { content: ''; position: absolute; left: 11px; top: 26px; bottom: -2px; width: 2px; background: #e5e7eb; }
+.wf-tl__item:last-child::before { display: none; }
+.wf-tl__item--start::before,
+.wf-tl__item--done::before,
+.wf-tl__item--approved::before { background: #bbf7d0; }
+
+.wf-tl__dot { position: absolute; left: 0; top: 0; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+.wf-tl__dot--start,
+.wf-tl__dot--done,
+.wf-tl__dot--approved { background: #dcfce7; color: #15803d; }
+.wf-tl__dot--rejected { background: #fee2e2; color: #b91c1c; }
+.wf-tl__dot--pending { background: #fef9c3; color: #a16207; animation: wf-pulse 1.6s infinite; }
+.wf-tl__dot--pending::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+@keyframes wf-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, .45); }
+  70% { box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .wf-tl__dot--pending { animation: none; } }
+
+.wf-tl__row { display: flex; justify-content: space-between; align-items: baseline; gap: 4px 12px; flex-wrap: wrap; }
+.wf-tl__node { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13.5px; font-weight: 600; color: #111827; }
+.wf-tl__time { font-size: 11.5px; color: #9ca3af; font-variant-numeric: tabular-nums; }
+.wf-tl__delta { margin-left: 6px; padding: 1px 7px; border-radius: 99px; background: #f3f4f6; color: #6b7280; font-weight: 500; }
+.wf-tl__note { margin-top: 6px; padding: 8px 12px; border-radius: 10px; background: #f9fafb; font-size: 12.5px; line-height: 1.5; color: #4b5563; word-break: break-word; }
+.wf-tl__empty { margin-top: 4px; font-size: 12px; color: #9ca3af; }
+.wf-tl__raw { white-space: pre-wrap; padding: 12px 14px; border-radius: 10px; background: #f9fafb; font-size: 12px; color: #4b5563; }
+
+/* Perbaikan typo radius di CSS lama */
+.wf-detail__tablewrap { border-radius: 12px; }  /* sebelumnya 1px */
+.wf-modal { border-radius: 5px; }              /* sebelumnya 5px, tidak cocok dengan .wf-modal__accent (18px) */

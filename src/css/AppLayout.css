@@ -1,0 +1,31 @@
+/* Struktur layout utama */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+  
+  /* Ketika class 'sidebar-collapsed' aktif pada induk */
+  .app-layout.sidebar-collapsed {
+    /* Ubah lebar kolom pertama menjadi ukuran minimal sidebar (70px) */
+    grid-template-columns: 70px 1fr;
+  }
+  
+  /* Area utama bagian kanan */
+  .main-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+    background: #dedede;
+  }
+
+  .content {
+    flex: 1;
+    overflow-y: auto;      /* ← ganti dari overflow: hidden */
+    overflow-x: hidden;    /* opsional, cegah scroll horizontal tidak sengaja */
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }

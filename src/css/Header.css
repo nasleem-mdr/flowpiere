@@ -1,0 +1,260 @@
+/* ── Header.css ─────────────────────────────────────────────────────────── */
+
+.header {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    gap: 12px;
+    height: 50px;
+    padding: 24px;
+    background:#0F172A;
+    border-bottom: 5px solid #00d1b2;
+    position: sticky;
+    top: 0;
+    margin-top: 18px;
+    z-index: 100;
+  }
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 50px;
+    padding: 24px;
+    background: #f4f6fb;
+    border-bottom: 4px solid #161b22;
+    position: sticky;
+    top: 0;
+    margin-top: 0px;
+    z-index: 10;
+  }
+  
+  .page-header-left {
+    display: flex;
+    gap: 8px; /* Ubah jadi 0px jika ingin benar-benar dempet tanpa jarak */
+  }
+  /* Brand */
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 180px;
+  }
+  
+  .header-brand-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 12px;
+    color: #fff;
+    letter-spacing: -0.5px;
+    flex-shrink: 0;
+  }
+  
+  .header-brand-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e2e8f0;
+    letter-spacing: -0.3px;
+  }
+  
+  .header-brand-name em {
+    font-style: normal;
+    color: #6366f1;
+  }
+  
+  /* Session info area */
+  .header-session {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Sesuaikan jarak antar elemen */
+    margin-left: auto; /* Memastikan dorongan penuh ke kanan */
+    justify-content: flex-end; /* Rata Kanan */
+  }
+  .header-info-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: transparent;
+    border: 0px solid #2a3040;
+    color: #94a3b8;
+  }
+  
+  .header-info-item svg {
+    color: #6366f1;
+    flex-shrink: 0;
+  }
+  
+  .header-info-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .header-info-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+  }
+  .header-info-value em {
+    font-size: 13px;
+    font-weight: 600;
+    color: #00d1b2;
+  }
+  .header-id {
+    font-style: normal;
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 400;
+  }
+  
+  .header-divider {
+    width: 1px;
+    height: 24px;
+    background: #2a3040;
+    margin: 0 4px;
+  }
+  
+  /* Logout button */
+  .header-logout {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid #2a3040;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-width: 90px;
+    justify-content: center;
+  }
+  
+  .header-logout:hover {
+    background: #3f1e1e;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+  }
+  
+  /* Responsive — sembunyikan label di layar kecil */
+  @media (max-width: 768px) {
+    .header-info-label {
+      display: none;
+    }
+    .header-session {
+      gap: 4px;
+    }
+    .header-info-item {
+      padding: 4px 8px;
+    }
+    .header-brand-name {
+      display: none;
+    }
+    .header-hide-mobile {
+      display: none;
+    }
+
+    .header-session {
+      gap: 8px; /* rapatkan jarak antar ikon karena teks hilang */
+    }
+
+    .header-info-item {
+      padding: 4px; /* perbesar area tap agar tetap mudah disentuh */
+    }
+  }
+  
+  .header-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #222935;
+    border: 1px solid #21262d;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 160px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    color:#fff;
+  }
+  
+  .header-dropdown button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color:white;
+  }
+  .header-dropdown button:hover {
+    background: #0a042c;
+  }
+  .header-notif {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    color: inherit;
+    text-decoration: none;
+    padding: 4px;
+    color: #ffffff;
+  }
+  
+  .header-notif-badge {
+    position: absolute;
+    top: -4px;
+    right: -6px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #e53935;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    box-sizing: border-box;
+  }
+  .header-role-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+.header-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #f7f8f8;
+  background: rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.header-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.header-avatar svg {
+  width: 16px;
+  height: 16px;
+}
