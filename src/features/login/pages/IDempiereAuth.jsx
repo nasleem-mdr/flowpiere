@@ -247,10 +247,13 @@ export default function IDempiereAuth({ onLoginSuccess }) {
           <div className="left-content">
             {/* Brand / Logo */}
             <div className="brand">
-              <div className="logo-container"><LogoIconW size={40} /></div>
+              <div className="logo-container"><LogoIconW size={50} /></div>
               <div className="brand-text">
-                <div className="brand-name">Procure<em>Grid</em></div>
-                <div className="brand-sub">Part of IDempiere</div>
+                <div className="brand-name">
+                  <em className="flow-text">Flow</em>
+                  <em className="piere-text">Piere</em>
+                </div>
+                <div className="brand-sub">IDemepiere React App</div>
               </div>
               <button className="hamburger-btn" onClick={() => setLeftOpen(!leftOpen)}>
                 {leftOpen ? '☰' : '☰'}
@@ -293,10 +296,13 @@ export default function IDempiereAuth({ onLoginSuccess }) {
         {step === 1 && (
           <div className="card slide-enter">
             <div className="brand">
-              <div><LogoIconW size={40}/></div>
+              <div><LogoIconW size={60}/></div>
               <div>
-                <div className="brand-name">Procure<em>Grid</em></div>
-                <div className="brand-sub">Procurement Application</div>
+                <div className="brand-name">
+                  <em className="flow-text">Flow</em>
+                  <em className="piere-text">Piere</em>
+                </div>
+                <div className="brand-sub">IDemepiere React App</div>
               </div>
             </div>
             <div className="card-sub"><em>Enter your username and passwoer to continue.</em></div>

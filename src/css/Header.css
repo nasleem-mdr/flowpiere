@@ -1,4 +1,5 @@
 /* ── Header.css ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
 
 .header {
     display: flex;
@@ -54,16 +55,20 @@
     letter-spacing: -0.5px;
     flex-shrink: 0;
   }
-  
-  .header-brand-name {
-    font-size: 15px;
-    font-weight: 600;
+  .header-info-value {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;        /* Tebal (Bold) */
+    font-style: italic;      /* Miring */
+    font-size: 1rem;         /* Ukuran font, bisa disesuaikan */
+  }
+
+  .header-info-value .flow-text{
     color: #e2e8f0;
-    letter-spacing: -0.3px;
+    font-style: italic;
   }
   
-  .header-brand-name em {
-    font-style: normal;
+  .header-info-value .piere-text {
+    font-style: italic;
     color: #6366f1;
   }
   
@@ -99,16 +104,6 @@
     letter-spacing: 0.5px;
   }
   
-  .header-info-value {
-    font-size: 13px;
-    font-weight: 600;
-    color: #ffffff;
-  }
-  .header-info-value em {
-    font-size: 13px;
-    font-weight: 600;
-    color: #00d1b2;
-  }
   .header-id {
     font-style: normal;
     font-size: 11px;

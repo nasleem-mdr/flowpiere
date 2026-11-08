@@ -61,16 +61,23 @@
   }
 
   .brand-name {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700; 
     color: #e6edf3;
     letter-spacing: 0.2px;
+    font-size: 1.5rem;
   }
-  .brand-name em {
-    font-size: 22px;
-    color: #1f6feb;
-    letter-spacing: 0.2px;
+  
+  .brand-name .flow-text {
+    color: #ffffff;
+    font-style: italic;
   }
+
+  .brand-name .piere-text {
+    color:  #2563eb; 
+    font-style: italic;
+  }
+
   .brand-sub {
     font-size: 11px;
     color: #8b949e;

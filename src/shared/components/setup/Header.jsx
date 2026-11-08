@@ -66,7 +66,10 @@ export default function Header({ session, onLogout, onSessionUpdate }) {
           >
             <LogoIconW size={20}/>
           </button>
-          <span className="header-info-value header-hide-mobile">Procure<em>Grid</em></span>
+          <span className="header-info-value header-hide-mobile">
+            <em className="flow-text">Flow</em>
+            <em className="piere-text">Piere</em>
+          </span>
         </div>
       </div>
  
