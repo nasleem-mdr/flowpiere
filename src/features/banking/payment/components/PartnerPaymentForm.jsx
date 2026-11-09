@@ -18,7 +18,7 @@ import { formatCurrency } from '@/utils/currency';
 import InvoiceListModal from '@/features/banking/payment/components/InvoiceListModal';
 import PayReceiptModal from '@/features/banking/payment/components/PayReceiptModal';
 import PaymentReceiptSuccessModal from '@/features/banking/payment/components/PaymentReceiptSuccessModal';
-import { usePayReceipt } from '@/features/banking/payment/hooks/usePayReceipt';
+import { usePayReceipt, todayLocalISO } from '@/features/banking/payment/hooks/usePayReceipt'; // sesuaikan path
 
 const PartnerPaymentForm = ({ isReceipt }) => {
     const partnerLabel = isReceipt ? 'Customer' : 'Vendor';
@@ -39,6 +39,7 @@ const PartnerPaymentForm = ({ isReceipt }) => {
     const [selectedBankAccountId, setSelectedBankAccountId] = useState(null);
     const [tenderType, setTenderType] = useState('X');
     const [description, setDescription] = useState('');
+    const [dateTrx, setDateTrx] = useState(todayLocalISO());
 
     const [dialog, setDialog] = useState({ isOpen: false, title: '', message: '' });
     const alert = (message, title = 'Perhatian') => setDialog({ isOpen: true, title, message });
@@ -101,6 +102,7 @@ const PartnerPaymentForm = ({ isReceipt }) => {
                 invoices: selectedInvoices,
                 tenderType,
                 description,
+                dateTrx,
             });
 
             setPayModalOpen(false);
@@ -160,8 +162,15 @@ const PartnerPaymentForm = ({ isReceipt }) => {
             {/* Header */}
             <div style={{ padding: '16px 18px', background: COLOR.surface, borderBottom: `1px solid ${COLOR.border}` }}>
                 <h2 style={{ margin: 0, fontSize: '16px', color: COLOR.textDk }}>{title}</h2>
+                <input
+                    id="dateTrx"
+                    type="date"
+                    value={dateTrx}
+                    onChange={(e) => setDateTrx(e.target.value)}
+                    required
+                />
             </div>
-
+            
             {/* Body */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
                 {!selectedPartner ? (
