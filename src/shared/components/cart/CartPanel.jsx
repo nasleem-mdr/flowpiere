@@ -18,6 +18,7 @@ const CartPanel = ({
   description,
   onDescriptionChange,
   descriptionPlaceholder = 'Catatan / keterangan (opsional)...',
+  onLineDescriptionChange,
   CartItemComponent = CartItemDefault,   // ⬅️ BUG #2 — sebelumnya tidak ada di destructure props
 }) => {
   if (!isOpen) return null;
@@ -112,6 +113,7 @@ const CartPanel = ({
                 onQtyChange={onQtyChange}
                 onUomChange={onUomChange}
                 onPriceChange={onPriceChange}
+                onDescriptionChange={onLineDescriptionChange}
               />
             ))
           )}

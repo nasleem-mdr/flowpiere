@@ -253,7 +253,7 @@ export default function IDempiereAuth({ onLoginSuccess }) {
                   <em className="flow-text">Flow</em>
                   <em className="piere-text">Piere</em>
                 </div>
-                <div className="brand-sub">IDemepiere React App</div>
+                <div className="brand-sub">IDemepiere Lite</div>
               </div>
               <button className="hamburger-btn" onClick={() => setLeftOpen(!leftOpen)}>
                 {leftOpen ? '☰' : '☰'}
@@ -302,7 +302,7 @@ export default function IDempiereAuth({ onLoginSuccess }) {
                   <em className="flow-text">Flow</em>
                   <em className="piere-text">Piere</em>
                 </div>
-                <div className="brand-sub">IDemepiere React App</div>
+                <div className="brand-sub">IDemepiere Lite</div>
               </div>
             </div>
             <div className="card-sub"><em>Enter your username and passwoer to continue.</em></div>

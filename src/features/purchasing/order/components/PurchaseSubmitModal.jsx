@@ -1,18 +1,20 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+* PurchaseSubmitModal.jsx
+* Sebelumnya 1 modal berisi Draft/Complete + section Cash Purchase yang
+* digabung, dengan section Cash Purchase dimatikan lewat flag
+* `ENABLE_CASH_PURCHASE = false`. Sekarang dipecah lewat prop `mode`, karena
+* cart panel (POCartSidebar/POCartPanel) sudah punya 2 tombol terpisah:
+*   - mode="normal" → tombol "Kirim PO" di cart panel → Draft/Complete
+*   - mode="cash"   → tombol "Bayar Tunai" di cart panel → pilih bank
+*     account lalu trigger PO→Receipt→Invoice→Payment otomatis
+* Modal & handler (onDraft/onComplete/onCashPurchase) dari PurchasingContainer
+* TIDAK berubah — cuma dipecah tampilannya.
+* ─────────────────────────────────────────────────────────────────────────────
+*/
+
 import React from 'react';
 import { COLOR, RADIUS } from '@/utils/styleTokens';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PurchaseSubmitModal.jsx
-// Sebelumnya 1 modal berisi Draft/Complete + section Cash Purchase yang
-// digabung, dengan section Cash Purchase dimatikan lewat flag
-// `ENABLE_CASH_PURCHASE = false`. Sekarang dipecah lewat prop `mode`, karena
-// cart panel (POCartSidebar/POCartPanel) sudah punya 2 tombol terpisah:
-//   - mode="normal" → tombol "Kirim PO" di cart panel → Draft/Complete
-//   - mode="cash"   → tombol "Bayar Tunai" di cart panel → pilih bank
-//     account lalu trigger PO→Receipt→Invoice→Payment otomatis
-// Modal & handler (onDraft/onComplete/onCashPurchase) dari PurchasingContainer
-// TIDAK berubah — cuma dipecah tampilannya.
-// ─────────────────────────────────────────────────────────────────────────────
 const PurchaseSubmitModal = ({
     isOpen, onClose, mode = 'normal',
     onDraft, onComplete, onCashPurchase,

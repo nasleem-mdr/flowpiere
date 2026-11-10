@@ -1,9 +1,8 @@
-import { useState, useCallback } from "react";
-
 /**
- * useUOMConversionSubmit
+ * src/features/master/product/hooks/useUOMConversionSubmit
  * ─────────────────────────────────────────────────────────────────────────
- * Simpan UOM Conversion per-produk ke tabel C_UOM_Conversion.
+ * Hooks yang digunakan untuk menyimpan UOM Conversion per-produk ke tabel 
+ * C_UOM_Conversion.
  *
  * Dipanggil dari ProductDetail.jsx SETELAH `saveProductWithLines` berhasil,
  * karena butuh M_Product_ID (untuk produk baru, ID-nya baru ada setelah
@@ -23,7 +22,9 @@ import { useState, useCallback } from "react";
  *
  * Form hanya meminta DivideRate ("isi per 1 UOM tujuan, dalam UOM dasar"),
  * MultiplyRate dihitung otomatis lewat calcMultiplyRate().
+ * ─────────────────────────────────────────────────────────────────────────
  */
+import { useState, useCallback } from "react";
 
 export const UOM_CONVERSION_TABLE = "c_uom_conversion";
 

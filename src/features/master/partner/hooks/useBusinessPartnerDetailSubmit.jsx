@@ -1,8 +1,5 @@
-import { useState, useCallback } from "react";
-import { fkId } from "@/api/idempiereApi";
-
 /**
- * useBusinessPartnerDetailSubmit
+ * /src/features/master/hooks/useBusinessPartnerDetailSubmit
  * ─────────────────────────────────────────────────────────────────────────
  * Pola SAMA PERSIS dengan useProductDetailSubmit.jsx: satu fungsi
  * `saveBPartnerWithLocations` menangani seluruh proses simpan halaman
@@ -24,7 +21,10 @@ import { fkId } from "@/api/idempiereApi";
  * Komponen (BusinessPartnerDetail.jsx) cuma menyusun state lokal
  * (locationLines, deletedLocationLineIds) dan memanggil fungsi ini SEKALI
  * saat tombol "Simpan" / "Buat Business Partner" diklik.
+ * ─────────────────────────────────────────────────────────────────────────
  */
+import { useState, useCallback } from "react";
+import { fkId } from "@/api/idempiereApi";
 
 // ─── Label field per tabel, dipakai untuk menerjemahkan error mandatory ────
 // dari Postgres ("null value in column ... of relation ...") jadi pesan

@@ -1,7 +1,11 @@
-// src/features/inventory/report/pages/InventoryStockReport.jsx
-// Laporan Inventory / Ketersediaan Stok — HANYA UI.
-// Data & filter: hooks/useInventoryStockReport.js
-// Print PDF & Excel: hooks/useInventoryStockExport.js
+/** src/features/inventory/report/pages/InventoryStockReport.jsx
+ * ───────────────────────────────────────────────────────────────────────────────────────
+ * Laporan Inventory / Ketersediaan Stok — HANYA UI.
+ * Data & filter: hooks/useInventoryStockReport.js
+ * Print PDF & Excel: hooks/useInventoryStockExport.js
+ * ───────────────────────────────────────────────────────────────────────────────────────
+*/
+
 import React, { useState, useEffect, useRef } from "react";
 import { PageHeader } from "@/shared/components";
 
@@ -9,7 +13,6 @@ import "@/App.css";
 import useInventoryStockReport, { getWarehouseId } from "../hooks/useInventoryStockReport";
 import useInventoryStockExport from "../hooks/useInventoryStockExport";
 import { listPageStyles as base } from "@/utils/listPageStyles";
-import { PiX } from "react-icons/pi";
 
 const InventoryStockReport = () => {
     const {

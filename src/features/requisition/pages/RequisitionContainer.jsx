@@ -90,8 +90,7 @@ const RequisitionContainer = () => {
     searchByUPC,
   } = useProductSearch();
 
-  const { cart, addToCart, removeFromCart, updateQty, updateUom, clearCart, setCart, totalQty, totalItems } = useCart();
-
+  const { cart, addToCart, removeFromCart, updateQty, updateUom, updateDescription, clearCart, setCart, totalQty, totalItems } = useCart();
   // Options di-memo — sebelumnya object literal baru dibuat tiap render,
   // jadi kalau useRequisitionSubmit punya effect internal yang depend ke
   // object ini utuh (bukan field-nya satu-satu), effect itu ikut jalan
@@ -689,6 +688,7 @@ useEffect(() => {
             isSubmitting={isSubmitting}
             description={description}
             onDescriptionChange={canSubmitRequisition ? setDescription : undefined}
+            onLineDescriptionChange={canSubmitRequisition ? updateDescription : undefined}
           />
         )}
       </div>
@@ -717,6 +717,7 @@ useEffect(() => {
           isSubmitting={isSubmitting}
           description={description}
           onDescriptionChange={canSubmitRequisition ? setDescription : undefined}
+          onLineDescriptionChange={canSubmitRequisition ? updateDescription : undefined}
         />
       )}
 

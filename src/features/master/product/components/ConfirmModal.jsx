@@ -1,8 +1,5 @@
-// src/features/master/product/components/ConfirmModal.jsx
-import React, { useEffect } from 'react';
-
 /**
- * ConfirmModal
+ * src/features/master/product/components/ConfirmModal.jsx
  * ─────────────────────────────────────────────────────────────────────────
  * Modal konfirmasi OK/Cancel generik — pengganti `window.confirm()` bawaan
  * browser (yang tidak bisa di-styling dan blocking terhadap seluruh tab).
@@ -19,7 +16,10 @@ import React, { useEffect } from 'react';
  *                  (dipakai untuk aksi destruktif seperti delete)
  *   onConfirm    - callback saat tombol OK diklik
  *   onCancel     - callback saat tombol Cancel / klik backdrop / tombol X diklik
+ * ─────────────────────────────────────────────────────────────────────────
  */
+import React, { useEffect } from 'react';
+
 export default function ConfirmModal({
     isOpen,
     title = 'Konfirmasi',

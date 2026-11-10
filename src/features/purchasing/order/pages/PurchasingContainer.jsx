@@ -973,8 +973,10 @@ useEffect(() => {
             totalItems={totalItems}
             totalAmount={totalAmount}
             summaryRight={cartSummaryRight}
-            onSubmit={canSubmitPO ? openNormalSubmitModal : undefined}
-            onSubmitCash={canSubmitPO ? openCashSubmitModal : undefined}
+            //onSubmit={canSubmitPO ? openNormalSubmitModal : undefined}
+            //onSubmitCash={canSubmitPO ? openCashSubmitModal : undefined}
+            onSubmitDraft={canSubmitPO ? handleSubmitDraft : undefined}
+            onSubmitComplete={canSubmitPO ? handleSubmitComplete : undefined}
             isSubmitting={isSubmitting}
             description={description}
             onDescriptionChange={canSubmitPO ? setDescription : undefined}
@@ -1002,9 +1004,14 @@ useEffect(() => {
           totalItems={totalItems}
           totalAmount={totalAmount}
           summaryRight={cartSummaryRight}         
-          onSubmit={canSubmitPO ? openNormalSubmitModal : undefined}
-          onSubmitCash={canSubmitPO ? openCashSubmitModal : undefined}
+          // onSubmit={canSubmitPO ? openNormalSubmitModal : undefined}
+          // onSubmitCash={canSubmitPO ? openCashSubmitModal : undefined}
+          onSubmitDraft={canSubmitPO ? handleSubmitDraft : undefined}
+          onSubmitComplete={canSubmitPO ? handleSubmitComplete : undefined}
           isSubmitting={isSubmitting}
+          description={description}
+          onDescriptionChange={canSubmitPO ? setDescription : undefined}
+          descriptionPlaceholder={PURCHASING_CONFIG.DESCRIPTION}
         />
       )}
 

@@ -33,7 +33,7 @@ export default function ProductAnalysisContainer() {
       </header>
 
       <div className="pa-page__search">
-        <ProductSearchInput onSearch={findProducts} onSelect={selectProduct} disabled={loading} />
+        <ProductSearchInput onSearch={findProducts} onSelect={(p) => selectProduct(p)} disabled={loading} />
       </div>
 
       {error && <div className="pa-banner pa-banner--error">{error}</div>}

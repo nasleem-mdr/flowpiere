@@ -1,12 +1,5 @@
-import { useState, useCallback } from "react";
-import { idempiereApi, fkId } from "@/api/idempiereApi";
-// Reuse konstanta & parser error yang sudah ada supaya perilaku import
-// konsisten dengan halaman ProductDetail (nama tabel vendor pricing,
-// pesan error mandatory yang ramah, dll).
-import { VENDOR_PRICING_TABLE, parseIdempiereError } from "./useProductDetailSubmit";
-
 /**
- * useProductImport
+ * src/features/master/product/hooks/useProductImport
  * ─────────────────────────────────────────────────────────────────────────
  * Hook untuk fitur Import Produk CSV.
  *
@@ -32,8 +25,15 @@ import { VENDOR_PRICING_TABLE, parseIdempiereError } from "./useProductDetailSub
  * multi-baris komponen tidak natural di format flat CSV. Produk dengan
  * is_bom=y tetap bisa diimpor (flag-nya terset), komponen diisi lewat
  * halaman edit ProductDetail.
+ * ─────────────────────────────────────────────────────────────────────────
  */
 
+import { useState, useCallback } from "react";
+import { idempiereApi, fkId } from "@/api/idempiereApi";
+// Reuse konstanta & parser error yang sudah ada supaya perilaku import
+// konsisten dengan halaman ProductDetail (nama tabel vendor pricing,
+// pesan error mandatory yang ramah, dll).
+import { VENDOR_PRICING_TABLE, parseIdempiereError } from "./useProductDetailSubmit";
 // ⚠️ Mirror ROUNDING_TYPE_OPTIONS di ProductDetail.jsx — sesuaikan kalau
 // AD_Ref_List RoundingType di instance-mu berbeda.
 const ROUNDING_ALLOWED = [0, 50, 100, 500, 1000, 5000, 10000];

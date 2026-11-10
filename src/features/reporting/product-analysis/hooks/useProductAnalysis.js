@@ -4,7 +4,7 @@
  * lalu agregasi jadi KPI + series grafik.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { idempiereApi } from '@/api/idempiereApi';
 import {
   searchProducts,
@@ -28,6 +28,7 @@ export function useProductAnalysis() {
   const [monthlySeries, setMonthlySeries] = useState([]);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState(null);
+  const reqRef = useRef(0);
 
   const findProducts = useCallback(async (keyword) => {
     try {
@@ -38,8 +39,9 @@ export function useProductAnalysis() {
     }
   }, []);
 
-  const selectProduct = useCallback(async (p) => {
+  const selectProduct = useCallback(async (p, { purchaseOnly = false } = {}) => {
     if (!p?.id) return;
+    const token = ++reqRef.current;
     setProduct(p);
     setLoading(true);
     setError(null);
@@ -50,38 +52,39 @@ export function useProductAnalysis() {
     try {
       const [reqPairs, orderPairs, invPairs, factRes] = await Promise.all([
         fetchLinesWithHeaders({ lineTable: 'm_requisitionline', headerTable: 'M_Requisition', productId: p.id }),
-        fetchLinesWithHeaders({ lineTable: 'c_orderline',       headerTable: 'C_Order',       productId: p.id }),
-        fetchLinesWithHeaders({ lineTable: 'c_invoiceline',     headerTable: 'C_Invoice',     productId: p.id }),
-        // Fact_Acct: keterkaitan jurnal — filter langsung by M_Product_ID.
-        idempiereApi(`/models/fact_acct?$filter=M_Product_ID eq ${p.id}&$orderby=DateAcct desc&$top=100`),
+        fetchLinesWithHeaders({ lineTable: 'c_orderline', headerTable: 'C_Order', productId: p.id }),
+        purchaseOnly ? [] : fetchLinesWithHeaders({ lineTable: 'c_invoiceline', headerTable: 'C_Invoice', productId: p.id }),
+        purchaseOnly ? null : idempiereApi(`/models/fact_acct?$filter=M_Product_ID eq ${p.id}&$orderby=DateAcct desc&$top=100`),
       ]);
+      if (token !== reqRef.current) return; // sudah ada request lebih baru
 
       const next = {
         requisitions: toRequisitionRows(reqPairs),
         purchases:    toOrderRows(orderPairs, false),
-        sales:        toOrderRows(orderPairs, true),
+        sales:        purchaseOnly ? [] : toOrderRows(orderPairs, true),
         invoices:     toInvoiceRows(invPairs),
         factAcct:     toFactRows(factRes?.records || []),
       };
-
       setData(next);
       setKpis(computeKpis(next));
       setPriceSeries(buildPriceSeries(next.purchases, next.sales));
       setMonthlySeries(buildMonthlySeries(next.purchases, next.sales));
     } catch (err) {
-      setError(err.message || 'Gagal memuat analisis produk.');
+      if (token === reqRef.current) setError(err.message || 'Gagal memuat analisis produk.');
     } finally {
-      setLoading(false);
+      if (token === reqRef.current) setLoading(false);
     }
   }, []);
 
   const clear = useCallback(() => {
+    reqRef.current++;
     setProduct(null);
     setData(EMPTY);
     setKpis(null);
     setPriceSeries([]);
     setMonthlySeries([]);
     setError(null);
+    setLoading(false);
   }, []);
 
   return { product, data, kpis, priceSeries, monthlySeries, loading, error,

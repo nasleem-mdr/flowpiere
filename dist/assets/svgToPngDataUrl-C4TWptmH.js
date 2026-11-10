@@ -1,0 +1,1 @@
+var e=(e,t,n)=>new Promise((r,i)=>{let a=new Blob([e],{type:`image/svg+xml;charset=utf-8`}),o=URL.createObjectURL(a),s=new Image;s.onload=()=>{let e=document.createElement(`canvas`);e.width=t*2,e.height=n*2,e.getContext(`2d`).drawImage(s,0,0,e.width,e.height),URL.revokeObjectURL(o),r(e.toDataURL(`image/png`))},s.onerror=i,s.src=o});export{e as t};

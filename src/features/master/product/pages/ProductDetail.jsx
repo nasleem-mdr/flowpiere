@@ -1,4 +1,9 @@
-// src/pages/ProductDetail.js
+/** src/features/master/product/pages/ProductDetail.js
+* ─────────────────────────────────────────────────────────────────────────
+* Pages ini bertugas untuk menampilkan Detail Product, menambah dan mengedit
+* Product/Service, juga upload gambar jika diperlukan
+* ─────────────────────────────────────────────────────────────────────────
+*/
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {

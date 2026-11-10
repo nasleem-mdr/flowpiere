@@ -40,6 +40,7 @@ const CartSidebar = ({
   description,
   onDescriptionChange,
   descriptionPlaceholder = 'Catatan / keterangan (opsional)...',
+  onLineDescriptionChange,
   CartItemComponent = CartItemDefault, 
 }) => {
   const isSingleButtonMode = !!onSubmit && !onSubmitDraft && !onSubmitComplete;
@@ -113,6 +114,7 @@ const CartSidebar = ({
               onQtyChange={onQtyChange}
               onUomChange={onUomChange}
               onPriceChange={onPriceChange}
+              onDescriptionChange={onLineDescriptionChange}
             />
           ))
         )}

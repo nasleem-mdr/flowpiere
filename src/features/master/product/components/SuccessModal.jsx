@@ -1,8 +1,5 @@
-import React from 'react';
-import '@/css/ConfirmModal.css';
-
 /**
- * SuccessModal
+ * src/features/master/product/components/SuccessModal.jsx
  * ─────────────────────────────────────────────────────────────────────────
  * Modal notifikasi sukses — dipakai setelah operasi simpan/tambah/hapus di
  * halaman Product Detail (dan bisa dipakai ulang di halaman lain) berhasil.
@@ -10,7 +7,13 @@ import '@/css/ConfirmModal.css';
  * bukan ⚠️) dan cuma butuh 1 tombol OK — tapi tetap pakai class CSS yang
  * sama (`modal-backdrop`, `modal-card`, dst.) biar tampilannya konsisten
  * tanpa nambah file CSS baru.
+ * ─────────────────────────────────────────────────────────────────────────
  */
+
+import React from 'react';
+import '@/css/ConfirmModal.css';
+
+
 const SuccessModal = ({
     isOpen,
     title = 'Berhasil',

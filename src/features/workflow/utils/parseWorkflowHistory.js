@@ -1,11 +1,12 @@
-// utils/parseWorkflowHistory.js
-// Mengubah activity['history-records'] (teks/HTML dari iDempiere) menjadi entri terstruktur.
-//
-// Contoh input (satu entri per baris, format node bisa "(Node):" atau "Node:"):
-//   Oct 13, 2026, 4:45:54 PM WIB (Start):
-//   Oct 13, 2026, 4:45:54 PM WIB (DocPrepare): 900005 - skgAdmin: Total Lines=60000 (#1) - ...
-//   Oct 13, 2026, 4:45:54 PM WIB QC Check: IsApproved=Y - Ok barang digudang habis
-//   Oct 13, 2026, 4:47:12 PM WIB Purchasing Check:
+/**  utils/parseWorkflowHistory.js
+* Mengubah activity['history-records'] (teks/HTML dari iDempiere) menjadi entri terstruktur.
+*
+* Contoh input (satu entri per baris, format node bisa "(Node):" atau "Node:"):
+*   Oct 13, 2026, 4:45:54 PM WIB (Start):
+*   Oct 13, 2026, 4:45:54 PM WIB (DocPrepare): 900005 - skgAdmin: Total Lines=60000 (#1) - ...
+*   Oct 13, 2026, 4:45:54 PM WIB QC Check: IsApproved=Y - Ok barang digudang habis
+*   Oct 13, 2026, 4:47:12 PM WIB Purchasing Check:
+*/
 
 const MONTHS = {
   jan: 0, feb: 1, mar: 2, apr: 3, may: 4, mei: 4, jun: 5, jul: 6,

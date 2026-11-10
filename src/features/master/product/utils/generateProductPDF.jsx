@@ -1,9 +1,14 @@
+/** src/features/master/product/utils/generateProductPDF.jsx
+* ─────────────────────────────────────────────────────────────────────────
+* Utilitas untuk menggenerate informasi Product /Jasa menjadi file pdf
+* ─────────────────────────────────────────────────────────────────────────
+*/
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
 
 import { idempiereApi, getProductImageBlobUrls } from "@/api/idempiereApi";
 
-// ---------- Brand palette (sesuaikan dengan warna resmi Sekupang Logistics) ----------
+// ─── Brand palette (sesuaikan dengan warna resmi Sekupang Logistics) ───
 const BRAND = {
   orange: [246, 166, 35],
   navy: [26, 38, 91],
@@ -12,7 +17,7 @@ const BRAND = {
   textDark: [30, 30, 30],
 };
 
-// ─── Helper kecil ─────────────────────────────────────────────────────────
+// ─── Helper kecil ──────────────────────────────────────────────────────
 function isYes(val) {
   return val === true || val === "Y" || val === "true";
 }

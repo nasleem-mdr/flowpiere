@@ -1,22 +1,25 @@
-// src/features/inventory/report/hooks/useInventoryStockReport.js
-// Seluruh query/fetch data + state filter + hasil olahan (pivot) Laporan Inventory.
-// UI (pages/InventoryStockReport.jsx) hanya memakai return value hook ini.
-//
-// ALUR FETCH:
-//   1) M_Warehouse aktif → opsi filter + pengelompok pivot.
-//   2) M_Locator aktif → map locatorId → warehouseId. (OnHand hanya punya
-//      M_Locator_ID, jadi "join" ke gudang dilakukan di JS lewat map ini.)
-//   3a) OnHand : M_StorageOnHand (QtyOnHand per produk per locator).
-//       Fallback ke model `m_storage` kalau `m_storageonhand` ditolak REST.
-//   3b) Reserved: M_StorageReservation (Qty per produk per GUDANG, IsSOTrx=Y).
-//       Tabel ini TIDAK punya M_Locator_ID — kolomnya M_Warehouse_ID.
-//       Fallback ke `m_storage.QtyReserved` (per locator). Kalau dua-duanya
-//       gagal, laporan tetap tampil dengan Reserved = 0 + peringatan.
-//   4) Gabung jadi baris { produk, gudang, onHand, reserved, available }.
-//   5) Filter gudang & pencarian produk di sisi client.
-//   6) Pivot per gudang dihitung dari baris yang sudah difilter (useMemo).
-//
-// Laporan ini SNAPSHOT stok SAAT INI (bukan per periode tanggal).
+/** src/features/inventory/report/hooks/useInventoryStockReport.js
+ * ───────────────────────────────────────────────────────────────────────────────────────
+ * Seluruh query/fetch data + state filter + hasil olahan (pivot) Laporan Inventory.
+ * UI (pages/InventoryStockReport.jsx) hanya memakai return value hook ini.
+ *
+ * ALUR FETCH:
+ *   1) M_Warehouse aktif → opsi filter + pengelompok pivot.
+ *   2) M_Locator aktif → map locatorId → warehouseId. (OnHand hanya punya
+ *      M_Locator_ID, jadi "join" ke gudang dilakukan di JS lewat map ini.)
+ *   3a) OnHand : M_StorageOnHand (QtyOnHand per produk per locator).
+ *       Fallback ke model `m_storage` kalau `m_storageonhand` ditolak REST.
+ *   3b) Reserved: M_StorageReservation (Qty per produk per GUDANG, IsSOTrx=Y).
+ *       Tabel ini TIDAK punya M_Locator_ID — kolomnya M_Warehouse_ID.
+ *       Fallback ke `m_storage.QtyReserved` (per locator). Kalau dua-duanya
+ *       gagal, laporan tetap tampil dengan Reserved = 0 + peringatan.
+ *   4) Gabung jadi baris { produk, gudang, onHand, reserved, available }.
+ *   5) Filter gudang & pencarian produk di sisi client.
+ *   6) Pivot per gudang dihitung dari baris yang sudah difilter (useMemo).
+ *
+ * Laporan ini SNAPSHOT stok SAAT INI (bukan per periode tanggal).
+ * ───────────────────────────────────────────────────────────────────────────────────────
+*/
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { idempiereApi } from "@/api/idempiereApi";
 

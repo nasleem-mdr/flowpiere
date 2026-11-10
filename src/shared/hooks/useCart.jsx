@@ -33,6 +33,10 @@ export function useCart(initialItems = []) {
     setCart(prev => prev.map(i => i.M_Product_ID === productId ? { ...i, selectedUom: uom } : i));
   }, []);
 
+  const updateDescription = useCallback((productId, description) => {
+    setCart(prev => prev.map(i => i.M_Product_ID === productId ? { ...i, Description: description } : i));
+  }, []);
+
   const clearCart = useCallback(() => setCart([]), []);
 
   const totalQty   = useMemo(() => cart.reduce((s, i) => s + i.Qty, 0), [cart]);
@@ -40,7 +44,7 @@ export function useCart(initialItems = []) {
 
   return {
     cart, setCart,
-    addToCart, removeFromCart, updateQty, updateUom, clearCart,
+    addToCart, removeFromCart, updateQty, updateUom, clearCart, updateDescription,
     totalQty, totalItems,
   };
 }

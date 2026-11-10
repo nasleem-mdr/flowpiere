@@ -1,4 +1,9 @@
-// src/features/master/product/pages/ProductImport.jsx
+/** src/features/master/product/pages/ProductImport.jsx
+* ─────────────────────────────────────────────────────────────────────────
+* Pages ini bertugas untuk import secara masal Product/Service, format yang
+* didukung adalah csv, disediakan template sample untuk memudahkan.
+* ─────────────────────────────────────────────────────────────────────────
+*/
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { idempiereApi } from "@/api/idempiereApi";

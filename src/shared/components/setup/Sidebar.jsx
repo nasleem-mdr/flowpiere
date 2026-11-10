@@ -62,9 +62,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         <div className="sidebar-header">
           <div className={`sidebar-brand ${isCollapsed ? 'collapsed' : ''}`}>
             <div className="brand-icon"><LogoIconW size={40}/></div>
-            {!isCollapsed && <span className="brand-name">
-              <em className="flow-text">Flow</em>
-              <em className="piere-text">Piere</em>
+            {!isCollapsed && <span><em className='flow-text'>Flow</em><em className='piere-text'>Piere</em>
             </span>}
           </div>
 

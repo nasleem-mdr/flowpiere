@@ -1,3 +1,9 @@
+/** src/features/master/product/pages/ProductList.jsx
+* ─────────────────────────────────────────────────────────────────────────
+* Pages ini bertugas untuk menampilkan daftar Product/Service, disediakan
+* tombol untuk mengedit dan mengunduh file dalam format pdf.
+* ─────────────────────────────────────────────────────────────────────────
+*/
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link } from "react-router-dom";
 

@@ -220,7 +220,16 @@ const InternalUseContainer = () => {
     if (chargePickerTarget) updateCharge(chargePickerTarget, charge);
     setChargePickerTarget(null);
   }, [chargePickerTarget, updateCharge]);
-
+  // Ganti gudang AKTIF (default untuk produk yang ditambahkan berikutnya).
+  // Item yang sudah ada di cart tetap memakai gudangnya sendiri
+  // (diubah lewat dropdown 🏭 di tiap item).
+  const handleWarehouseChange = useCallback((e) => {
+    const id = parseInt(e.target.value, 10);
+    const wh = warehouses.find(w => w.M_Warehouse_ID === id);
+    if (!wh) return;
+    setWarehouseInfo({ id: wh.M_Warehouse_ID, name: wh.Name });
+  }, [warehouses]);
+  
   // Ganti gudang sumber stok utk 1 item di cart. Locator, QtyOnHand, dan
   // opsi UOM di-resolve ULANG utk gudang baru — TIDAK cuma ganti label.
   // Qty entry (item.Qty) sengaja tidak diubah.
@@ -310,6 +319,7 @@ useEffect(() => {
       clearCart();
       addItems(items);
       setEditInventoryId(invId);
+      setWarehouseInfo({ id: whId, name: whName });
       setEditDocNo(edit.DocumentNo || `#${invId}`);
       setEditStatus(idOf(edit.DocStatus) ?? null);
       setCartOpen(true);
@@ -416,10 +426,32 @@ const handleSubmit = async (submitMode = 'complete') => {
         </span>
         <span style={{
           background: 'rgba(255,255,255,0.18)', borderRadius: '20px',
-          padding: '3px 10px', fontSize: '11px', color: '#020b1f', whiteSpace: 'nowrap',
-        }}>Warehouse : 
-          {warehouseInfo?.name || '...'}
+          padding: '3px 6px 3px 10px', fontSize: '11px', color: '#020b1f',
+          whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px',
+        }}>
+          <span>Warehouse :</span>
+          <select
+            value={warehouseInfo?.id ?? ''}
+            onChange={handleWarehouseChange}
+            disabled={!canSubmitIU || warehouses.length === 0}
+            title="Ganti gudang sumber untuk produk yang ditambahkan berikutnya"
+            style={{
+              background: 'transparent', border: 'none', outline: 'none',
+              fontSize: '11px', fontWeight: 600, color: '#020b1f',
+              cursor: canSubmitIU ? 'pointer' : 'default', colorScheme: 'light',
+              maxWidth: isDesktop ? '180px' : '120px',
+            }}
+          >
+            {/* Jaga-jaga: gudang sesi login belum ada di daftar (belum selesai dimuat) */}
+            {warehouseInfo && !warehouses.some(w => w.M_Warehouse_ID === warehouseInfo.id) && (
+              <option value={warehouseInfo.id}>{warehouseInfo.name}</option>
+            )}
+            {warehouses.map(w => (
+              <option key={w.M_Warehouse_ID} value={w.M_Warehouse_ID}>{w.Name}</option>
+            ))}
+          </select>
         </span>
+        
       </div>
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>

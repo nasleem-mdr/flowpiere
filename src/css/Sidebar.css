@@ -53,21 +53,7 @@
     font-weight: bold;
     background-color: #0F172A;
   }
-  .brand-name {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 700;        /* Tebal (Bold) */
-    font-style: italic;      /* Miring */
-    font-size: 1.5rem;         /* Ukuran font, bisa disesuaikan */
-  }
-  .brand-name .flow-text {
-    color: #fff; 
-    font-style: italic;
-  }
-
-  .brand-name .piere-text {
-    color: #2563eb; 
-    font-style: italic;
-  }
+  
   .sidebar-nav {
     padding: 15px 0;
     display: flex;
@@ -131,7 +117,12 @@
   background-color: #0F172A ;
   flex-shrink: 0;
 }
-
+.flow-text{
+  color: #fff;
+}
+.piere-text{
+  color:#1f78e6;
+}
 /* Desain Tombol Hamburger */
 .hamburger-btn {
   background: none;

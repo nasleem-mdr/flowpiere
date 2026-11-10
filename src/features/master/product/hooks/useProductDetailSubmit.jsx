@@ -1,8 +1,5 @@
-import { useState, useCallback } from "react";
-import { fkId } from "@/api/idempiereApi";
-
 /**
- * useProductDetailSubmit
+ * src/features/master/product/hooks/useProductDetailSubmit
  * ─────────────────────────────────────────────────────────────────────────
  * Satu fungsi `saveProductWithLines` untuk semua operasi simpan di halaman
  * ProductDetail:
@@ -14,7 +11,11 @@ import { fkId } from "@/api/idempiereApi";
  *
  * Komponen (ProductDetail.js) cuma menyusun state lokal dan memanggil
  * fungsi ini SEKALI saat tombol "Simpan" / "Buat Produk" diklik.
+ * ─────────────────────────────────────────────────────────────────────────
  */
+
+import { useState, useCallback } from "react";
+import { fkId } from "@/api/idempiereApi";
 
 // ─── Nama tabel (REST model, huruf kecil) ───────────────────────────────
 // Beberapa instance iDempiere masih pakai nama tabel lama "M_Product_PO",

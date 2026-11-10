@@ -1,5 +1,5 @@
 /**
- * productCsvParser.js
+ * src/features/master/product/utils/productCsvParser.js
  * ─────────────────────────────────────────────────────────────────────────
  * Parser CSV mandiri (tanpa library tambahan) untuk fitur Import Produk.
  *
