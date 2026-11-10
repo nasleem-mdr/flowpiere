@@ -40,7 +40,16 @@ const ROUNDING_TYPE_OPTIONS = [
     { value: 5000, label: "Bulatkan ke 5.000 terdekat" },
     { value: 10000, label: "Bulatkan ke 10.000 terdekat" },
 ];
-
+// ─── Opsi ProductType (AD_Ref_List "M_Product_ProductType") ──────────────
+// Value = kode List, bukan label. SESUAIKAN kalau instance-mu menambah tipe custom.
+const PRODUCT_TYPE_OPTIONS = [
+    { value: "A", label: "Asset" },
+    { value: "I", label: "Item" },
+    { value: "S", label: "Service" },
+    { value: "R", label: "Resource" },
+    { value: "E", label: "Expense type" },
+    { value: "O", label: "Online" },
+];
 // ─── Opsi List untuk header & baris BOM (PP_Product_BOM / BOMLine) ──────
 // ⚠️ SESUAIKAN dengan AD_Ref_List di instance-mu (PP_BOMType, PP_BOMUse,
 // PP_ComponentType). Value-nya kode List, bukan label.
@@ -201,7 +210,8 @@ function ProductDetail() {
     // IsPhantom & IsBOMPriceOverride hanya bermakna kalau IsBOM = true.
     const [form, setForm] = useState({
         Value: "", Name: "", Description: "", UPC: "",
-        IsPurchased: false, IsSold: false,
+        IsPurchased: true, IsSold: false,
+        ProductType: "I",
         IsStocked: true, IsBOM: false, IsPhantom: false, IsBOMPriceOverride: false,
         MarkupPercent: 0, RoundingType: 0,
         M_Product_Category_ID: "", C_UOM_ID: "",
@@ -277,6 +287,7 @@ function ProductDetail() {
                 Description: data.Description || "",
                 UPC: data.UPC || "",
                 IsPurchased: isYes(data.IsPurchased),
+                ProductType: getId(data.ProductType) ?? "I",
                 IsSold: isYes(data.IsSold),
                 IsStocked: isYes(data.IsStocked),
                 IsBOM: isYes(data.IsBOM),
@@ -561,6 +572,7 @@ function ProductDetail() {
             Description: form.Description,
             UPC: form.UPC?.trim() || (isNew ? undefined : null), // opsional; kosong saat edit = hapus nilai lama
             IsPurchased: form.IsPurchased,
+            ProductType: form.ProductType,
             IsSold: form.IsSold,
             IsStocked: form.IsStocked,
             IsBOM: form.IsBOM,
@@ -800,7 +812,15 @@ function ProductDetail() {
             return next;
         });
     };
-
+    // Stocked hanya relevan untuk tipe Item (mengikuti window Product iDempiere).
+    // Pindah ke Service/Resource/dst → Stocked otomatis dimatikan.
+    const handleProductTypeChange = (value) => {
+        setForm((prev) => ({
+            ...prev,
+            ProductType: value,
+            ...(value !== "I" ? { IsStocked: false } : {}),
+        }));
+    };
     // ─── BOM: semua operasi HANYA mengubah state lokal ──────────────────────
     const handleBomHeaderChange = (field, value) => {
         setBomHeader((prev) => ({ ...prev, [field]: value, _dirty: true }));
@@ -1204,6 +1224,24 @@ function ProductDetail() {
                                         </select>
                                     ) : <p>{product ? getLabel(product.C_Charge_ID) : "-"}</p>}
                                 </div>
+                                <div className="classification-section">
+                                    <label>Product Type *</label>
+                                    {isEditing ? (
+                                        <select
+                                            value={form.ProductType}
+                                            onChange={(e) => handleProductTypeChange(e.target.value)}
+                                        >
+                                            {PRODUCT_TYPE_OPTIONS.map((opt) => (
+                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <p>
+                                            {PRODUCT_TYPE_OPTIONS.find((o) => o.value === getId(product.ProductType))?.label
+                                                || getLabel(product.ProductType)}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         {/* Container Grid Khusus Checkbox / Status Flags */}
                         <div className="checkbox-grid">
@@ -1235,13 +1273,16 @@ function ProductDetail() {
                                     <input
                                         type="checkbox"
                                         checked={form.IsStocked}
-                                        disabled={form.IsPhantom}
-                                        title={form.IsPhantom ? "Produk Phantom tidak punya stok sendiri" : undefined}
+                                        disabled={form.IsPhantom || form.ProductType !== "I"}
+                                        title={
+                                            form.ProductType !== "I" ? "Hanya produk bertipe Item yang bisa di-stock"
+                                            : form.IsPhantom ? "Produk Phantom tidak punya stok sendiri" : undefined
+                                        }
                                         onChange={(e) => handleFlagChange("IsStocked", e.target.checked)}
                                     />
                                 ) : <span>{isYes(product.IsStocked) ? 'Yes' : 'No'}</span>}
                             </div>
-
+                            
                             <div className="checkbox-item">
                                 <label>BOM ?</label>
                                 {isEditing ? (

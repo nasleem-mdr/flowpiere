@@ -59,17 +59,15 @@
     font-family: 'Montserrat', sans-serif;
     font-weight: 700;        /* Tebal (Bold) */
     font-style: italic;      /* Miring */
-    font-size: 1rem;         /* Ukuran font, bisa disesuaikan */
+    font-size: 0.8rem;         /* Ukuran font, bisa disesuaikan */
   }
 
   .header-info-value .flow-text{
     color: #e2e8f0;
-    font-style: italic;
   }
   
   .header-info-value .piere-text {
-    font-style: italic;
-    color: #6366f1;
+    color: #1f78e6;
   }
   
   /* Session info area */

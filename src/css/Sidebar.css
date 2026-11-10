@@ -53,7 +53,16 @@
     font-weight: bold;
     background-color: #0F172A;
   }
-  
+  .sidebar-info-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+  }
+  .sidebar-info-value em {
+    font-size: 13px;
+    font-weight: 600;
+    color: #00d1b2;
+  }
   .sidebar-nav {
     padding: 15px 0;
     display: flex;

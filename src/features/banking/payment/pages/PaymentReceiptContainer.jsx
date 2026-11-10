@@ -1,10 +1,11 @@
 /**  ─────────────────────────────────────────────────────────────────────────────
-* PaymentReceiptContainer.jsx
-* Pencarian partner dibuat inline di sini (bukan pakai VendorPickerModal dari
-* Purchasing) karena filternya beda tiap mode: IsCustomer=true untuk AR
-* Receipt, IsVendor=true untuk AP Payment — kalau Anda sudah punya komponen
-* picker BPartner generik di tempat lain, tinggal ganti bagian search di
-* bawah dengan itu.
+* PartnerPaymentForm.jsx
+* Form bersama untuk PaymentVendorContainer (AP Payment) dan
+* ReceiptCustomerContainer (AR Receipt). Arah transaksi ditentukan SEPENUHNYA
+* oleh prop `isReceipt` dari container pembungkus — tidak ada toggle mode lagi,
+* jadi begitu form dibuka langsung terfilter:
+*   isReceipt = true  → partner IsCustomer, invoice isSOTrx=true  (Terima dari Customer)
+*   isReceipt = false → partner IsVendor,   invoice isSOTrx=false (Bayar ke Vendor)
 * ─────────────────────────────────────────────────────────────────────────────
 */
 
@@ -17,10 +18,12 @@ import { formatCurrency } from '@/utils/currency';
 import InvoiceListModal from '@/features/banking/payment/components/InvoiceListModal';
 import PayReceiptModal from '@/features/banking/payment/components/PayReceiptModal';
 import PaymentReceiptSuccessModal from '@/features/banking/payment/components/PaymentReceiptSuccessModal';
-import { usePayReceipt } from '@/features/banking/payment/hooks/usePayReceipt';
+import { usePayReceipt, todayLocalISO } from '@/features/banking/payment/hooks/usePayReceipt'; // sesuaikan path
 
-const PaymentReceiptContainer = () => {
-    const [isReceipt, setIsReceipt] = useState(true); // true = AR Receipt (dari Customer), false = AP Payment (ke Vendor)
+const PartnerPaymentForm = ({ isReceipt }) => {
+    const partnerLabel = isReceipt ? 'Customer' : 'Vendor';
+    const accentColor  = isReceipt ? '#16a34a' : COLOR.primary;
+    const title        = isReceipt ? '💰 Terima Pembayaran Customer' : '💸 Bayar ke Vendor';
 
     const [partnerQuery, setPartnerQuery] = useState('');
     const [partnerResults, setPartnerResults] = useState([]);
@@ -36,23 +39,13 @@ const PaymentReceiptContainer = () => {
     const [selectedBankAccountId, setSelectedBankAccountId] = useState(null);
     const [tenderType, setTenderType] = useState('X');
     const [description, setDescription] = useState('');
+    const [dateTrx, setDateTrx] = useState(todayLocalISO());
 
     const [dialog, setDialog] = useState({ isOpen: false, title: '', message: '' });
     const alert = (message, title = 'Perhatian') => setDialog({ isOpen: true, title, message });
 
     const { bankAccounts } = useBankAccounts();
     const { submit, isSubmitting } = usePayReceipt();
-
-    // Reset semua pilihan saat ganti mode AR/AP — invoice & partner AR tidak
-    // relevan untuk AP dan sebaliknya.
-    const handleModeChange = (nextIsReceipt) => {
-        setIsReceipt(nextIsReceipt);
-        setSelectedPartner(null);
-        setPartnerQuery('');
-        setPartnerResults([]);
-        setSelectedInvoices([]);
-        setSelectedBankAccountId(null);
-    };
 
     // ── Cari partner (debounce sederhana) ───────────────────────────────
     useEffect(() => {
@@ -63,7 +56,7 @@ const PaymentReceiptContainer = () => {
                 const flagFilter = isReceipt ? 'IsCustomer eq true' : 'IsVendor eq true';
                 // contains() di REST API iDempiere case-sensitive — dibungkus
                 // toupper() di kedua sisi supaya "budi" tetap ketemu "Budi Santoso".
-                const searchTerm = partnerQuery.trim().replace(/'/g, "''"); // escape single quote jaga-jaga
+                const searchTerm = partnerQuery.trim().replace(/'/g, "''");
                 const filterStr = `${flagFilter} and IsActive eq true and contains(toupper(Name),toupper('${searchTerm}'))`;
                 const path = `/models/c_bpartner?$filter=${filterStr}&$select=C_BPartner_ID,Name&$top=15&$orderby=Name`;
                 const res = await idempiereApi(path);
@@ -85,12 +78,7 @@ const PaymentReceiptContainer = () => {
         setSelectedInvoices([]);
     };
 
-    const handleInvoicesConfirmed = (invoices) => {
-        setSelectedInvoices(invoices);
-    };
-
     const totalSelected = selectedInvoices.reduce((s, i) => s + parseFloat(i.allocatedAmt || 0), 0);
-
     const selectedBankAccountName = bankAccounts.find(ba => ba.id === selectedBankAccountId)?.name;
 
     const handleFinalSubmit = useCallback(async () => {
@@ -114,6 +102,7 @@ const PaymentReceiptContainer = () => {
                 invoices: selectedInvoices,
                 tenderType,
                 description,
+                dateTrx,
             });
 
             setPayModalOpen(false);
@@ -150,7 +139,7 @@ const PaymentReceiptContainer = () => {
                 partnerId={selectedPartner?.id}
                 partnerName={selectedPartner?.name}
                 isSOTrx={isReceipt}
-                onConfirm={handleInvoicesConfirmed}
+                onConfirm={setSelectedInvoices}
             />
 
             <PayReceiptModal
@@ -172,42 +161,29 @@ const PaymentReceiptContainer = () => {
 
             {/* Header */}
             <div style={{ padding: '16px 18px', background: COLOR.surface, borderBottom: `1px solid ${COLOR.border}` }}>
-                <h2 style={{ margin: '0 0 12px', fontSize: '16px', color: COLOR.textDk }}>💳 Payment & Receipt</h2>
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                        onClick={() => handleModeChange(true)}
-                        style={{
-                            flex: 1, padding: '10px', borderRadius: RADIUS.md, fontWeight: 700, fontSize: '13px',
-                            border: `1.5px solid ${isReceipt ? '#16a34a' : COLOR.border}`,
-                            background: isReceipt ? '#16a34a' : '#fff',
-                            color: isReceipt ? '#fff' : COLOR.textMd, cursor: 'pointer',
-                        }}
-                    >💰 Terima dari Customer</button>
-                    <button
-                        onClick={() => handleModeChange(false)}
-                        style={{
-                            flex: 1, padding: '10px', borderRadius: RADIUS.md, fontWeight: 700, fontSize: '13px',
-                            border: `1.5px solid ${!isReceipt ? COLOR.primary : COLOR.border}`,
-                            background: !isReceipt ? COLOR.primary : '#fff',
-                            color: !isReceipt ? '#fff' : COLOR.textMd, cursor: 'pointer',
-                        }}
-                    >💸 Bayar ke Vendor</button>
-                </div>
+                <h2 style={{ margin: 0, fontSize: '16px', color: COLOR.textDk }}>{title}</h2>
+                <input
+                    id="dateTrx"
+                    type="date"
+                    value={dateTrx}
+                    onChange={(e) => setDateTrx(e.target.value)}
+                    required
+                />
             </div>
-
+            
             {/* Body */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
                 {!selectedPartner ? (
                     <div>
                         <label style={{ fontSize: '12px', fontWeight: 600, color: COLOR.textMd, display: 'block', marginBottom: '6px' }}>
-                            Cari {isReceipt ? 'Customer' : 'Vendor'}
+                            Cari {partnerLabel}
                         </label>
                         <input
                             type="text"
                             value={partnerQuery}
                             onChange={e => setPartnerQuery(e.target.value)}
-                            placeholder={`Ketik nama ${isReceipt ? 'customer' : 'vendor'}...`}
+                            placeholder={`Ketik nama ${partnerLabel.toLowerCase()}...`}
+                            autoFocus
                             style={{
                                 width: '100%', boxSizing: 'border-box', padding: '10px 12px',
                                 border: `1.5px solid ${COLOR.border}`, borderRadius: RADIUS.md,
@@ -234,7 +210,7 @@ const PaymentReceiptContainer = () => {
                             padding: '12px 14px', marginBottom: '14px',
                         }}>
                             <div>
-                                <div style={{ fontSize: '11px', color: COLOR.textLt }}>{isReceipt ? 'Customer' : 'Vendor'}</div>
+                                <div style={{ fontSize: '11px', color: COLOR.textLt }}>{partnerLabel}</div>
                                 <div style={{ fontSize: '14px', fontWeight: 700, color: COLOR.textDk }}>{selectedPartner.name}</div>
                             </div>
                             <button
@@ -279,7 +255,7 @@ const PaymentReceiptContainer = () => {
                                     onClick={() => setPayModalOpen(true)}
                                     style={{
                                         width: '100%', padding: '14px', borderRadius: RADIUS.md, border: 'none',
-                                        background: isReceipt ? '#16a34a' : COLOR.primary, color: '#fff',
+                                        background: accentColor, color: '#fff',
                                         fontWeight: 700, fontSize: '14px', cursor: 'pointer',
                                     }}
                                 >Lanjutkan ke Pembayaran</button>
@@ -292,4 +268,4 @@ const PaymentReceiptContainer = () => {
     );
 };
 
-export default PaymentReceiptContainer;
+export default PartnerPaymentForm;

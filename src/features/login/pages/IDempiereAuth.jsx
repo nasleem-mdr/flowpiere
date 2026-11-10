@@ -197,17 +197,6 @@ export default function IDempiereAuth({ onLoginSuccess }) {
         acctSchemaId: data.acctSchemaId,   // ← baris baru
         language,
       });
-      // onLoginSuccess({
-      //   token: data.token,
-      //   username: form1.username,
-      //   clientId: parseInt(selectedClientId, 10),
-      //   clientName: clients.find((c) => String(c.id) === selectedClientId)?.name || selectedClientId,
-      //   roleId: parseInt(selectedRoleId, 10),
-      //   roleName: roles.find((r) => String(r.id) === selectedRoleId)?.name || selectedRoleId,
-      //   orgId: parseInt(selectedOrgId, 10),
-      //   orgName: orgs.find((o) => String(o.id) === selectedOrgId)?.name || selectedOrgId,
-      //   language,
-      // });
       navigate('/dashboard');
     } catch (err) {
       setError(err.message);

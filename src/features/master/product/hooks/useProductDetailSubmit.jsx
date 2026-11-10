@@ -41,6 +41,7 @@ const FIELD_LABELS = {
         c_uom_id: "UOM",
         c_taxcategory_id: "Tax Category",
         c_charge_id: "Charge (Internal Use)",
+        producttype: "Product Type",
     },
     m_bpartnerproduct: {
         c_bpartner_id: "Vendor",
