@@ -25,6 +25,13 @@ import {
     DOC_BASE_TYPE, 
     IS_SO_TRX, 
 } from '@/utils/docTypeResolver';
+// Format YYYY-MM-DD berdasarkan zona waktu lokal (bukan UTC)
+export const todayLocalISO = () => {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
 
 export function usePayReceipt() {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,8 +48,9 @@ export function usePayReceipt() {
      * @param {Array<{ C_Invoice_ID: number, DocumentNo?: string, allocatedAmt: number }>} params.invoices
      * @param {string} [params.tenderType] - default 'X' (Cash)
      * @param {string} [params.description]
+     * @param {string} [params.dateTrx] - Tanggal pembayaran (YYYY-MM-DD), default hari ini
      */
-    const submit = async ({
+        const submit = async ({
         isReceipt,
         partner,
         bankAccountId,
@@ -53,6 +61,7 @@ export function usePayReceipt() {
         invoices,
         tenderType = 'X',
         description = '',
+        dateTrx,
     }) => {
         const validInvoices = (invoices || []).filter(inv => parseFloat(inv.allocatedAmt || 0) > 0);
         if (validInvoices.length === 0) {
@@ -61,7 +70,9 @@ export function usePayReceipt() {
         if (!partner?.id) throw new Error('Partner belum dipilih.');
         if (!bankAccountId) throw new Error('Bank/Cash Account belum dipilih.');
         if (!currencyId) throw new Error('Currency tidak terdeteksi dari invoice yang dipilih.');
-
+        if (dateTrx && !/^\d{4}-\d{2}-\d{2}$/.test(dateTrx)) {
+            throw new Error('Format tanggal pembayaran tidak valid.');
+        }
         const totalAmt = validInvoices.reduce((s, i) => s + parseFloat(i.allocatedAmt || 0), 0);
 
         setIsSubmitting(true);
@@ -71,7 +82,8 @@ export function usePayReceipt() {
                 { orgId, isSOTrx: isReceipt ? IS_SO_TRX.SALES : IS_SO_TRX.PURCHASE }
             );
 
-            const todayISO = new Date().toISOString().split('T')[0];
+            //const todayISO = new Date().toISOString().split('T')[0];
+            const paymentDate = dateTrx || todayLocalISO();
 
             // ── 1) C_Payment header (Draft) — SENGAJA tanpa C_Invoice_ID ────
             const paymentPayload = {
@@ -83,8 +95,8 @@ export function usePayReceipt() {
                 C_Currency_ID:    { id: currencyId },
                 PayAmt:           totalAmt,
                 TenderType:       tenderType,
-                DateTrx:          todayISO,
-                DateAcct:         todayISO,
+                DateTrx:          paymentDate,
+                DateAcct:         paymentDate,
                 IsReceipt:        isReceipt,
                 Description:      description || `Alokasi ${validInvoices.length} invoice — ${partner.name || ''}`,
             };
@@ -128,7 +140,7 @@ export function usePayReceipt() {
                 partnerName: partner.name,
                 bankAccountName,
                 tenderType,
-                dateTrx: todayISO,
+                dateTrx: paymentDate,
                 totalAmt,
                 invoices: validInvoices.map(inv => ({
                     documentNo: inv.DocumentNo,
