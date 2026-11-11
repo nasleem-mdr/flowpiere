@@ -3,3 +3,4 @@ export { default as WorkflowDetailSheet } from './WorkflowDetailSheet';
 export { default as DecisionModal } from './DecisionModal';
 export { default as ForwardModal } from './ForwardModal';
 export { default as ProductHistoryModal } from './ProductHistoryModal';
+export { default as AttachmentViewerModal } from './AttachmentViewerModal';

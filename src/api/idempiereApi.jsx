@@ -145,15 +145,106 @@ export async function waitForDocStatus(tableName, id, {
 
 // Ambil daftar metadata attachment untuk satu record M_Product.
 // Return: array [{ name, contentType }, ...] — kosong kalau tidak ada attachment.
-export async function getProductAttachments(productId) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Attachment helpers GENERIK — berlaku untuk tabel apa pun (m_product,
+// m_requisition, ...). Wrapper khusus produk di bawah mempertahankan nama &
+// perilaku lama, jadi ProductDetail tidak perlu diubah.
+//
+// REST: GET    .../attachments          → { attachments: [{ name, contentType }] }
+//       GET    .../attachments/{name}   → binary
+//       POST   .../attachments          → { name, data(base64) }
+//       DELETE .../attachments          → hapus SEMUA attachment record itu
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Daftar metadata attachment: [{ name, contentType }] — kosong kalau tidak ada.
+export async function getAttachments(tableName, recordId) {
   try {
-    const res = await idempiereApi(`/models/m_product/${productId}/attachments`);
-    return Array.isArray(res.attachments) ? res.attachments : [];
+    const res = await idempiereApi(`/models/${tableName.toLowerCase()}/${recordId}/attachments`);
+    return Array.isArray(res?.attachments) ? res.attachments : [];
   } catch (err) {
-    // 404/tidak ada attachment bukan error fatal — anggap saja kosong
+    // 404 / tidak ada attachment bukan error fatal — anggap kosong
     return [];
   }
 }
+
+// Semua attachment sebagai blob URL (gambar → <img>, PDF → link buka di tab baru).
+// Return: [{ url, name, index, contentType }]
+// PENTING: pemanggil wajib URL.revokeObjectURL(url) untuk tiap item saat cleanup.
+// onlyImages=true → hanya attachment bertipe image/* (dipakai galeri produk).
+export async function getAttachmentBlobUrls(tableName, recordId, { onlyImages = false } = {}) {
+  const table = tableName.toLowerCase();
+  let list = await getAttachments(table, recordId);
+  if (onlyImages) list = list.filter(a => a.contentType?.startsWith('image/'));
+  if (list.length === 0) return [];
+
+  const token = localStorage.getItem('token');
+
+  const results = await Promise.all(
+    list.map(async (att, index) => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/models/${table}/${recordId}/attachments/${encodeURIComponent(att.name)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!res.ok) return null;
+        const raw = await res.blob();
+        // Paksa MIME dari metadata supaya PDF dibuka di tab baru,
+        // bukan terunduh sebagai application/octet-stream.
+        const blob = att.contentType && raw.type !== att.contentType
+          ? new Blob([raw], { type: att.contentType })
+          : raw;
+        return {
+          url: URL.createObjectURL(blob),
+          name: att.name,
+          index,
+          contentType: att.contentType || raw.type || '',
+        };
+      } catch {
+        return null;
+      }
+    })
+  );
+
+  return results.filter(Boolean);
+}
+
+// File (dari <input type="file">) → base64 murni tanpa prefix "data:...;base64,".
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      resolve(result.split(',')[1] || '');
+    };
+    reader.onerror = () => reject(new Error('Gagal membaca file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// Upload file sebagai AD_Attachment. Endpoint ini "add/update by name": nama
+// yang sama menimpa isi lama, jadi nama di-prefix timestamp supaya tiap upload
+// selalu jadi entry baru.
+export async function uploadAttachment(tableName, recordId, file) {
+  const base64Data = await fileToBase64(file);
+  const uniqueName = `${Date.now()}-${file.name}`;
+  return idempiereApi(`/models/${tableName.toLowerCase()}/${recordId}/attachments`, {
+    method: 'POST',
+    body: JSON.stringify({ name: uniqueName, data: base64Data }),
+  });
+}
+
+// Hapus SEMUA attachment record (REST tidak menyediakan hapus satuan).
+export async function deleteAllAttachments(tableName, recordId) {
+  return idempiereApi(`/models/${tableName.toLowerCase()}/${recordId}/attachments`, {
+    method: 'DELETE',
+  });
+}
+
+// ── Wrapper khusus produk (nama & perilaku lama dipertahankan) ──────────────
+export const getProductAttachments       = (productId)       => getAttachments('m_product', productId);
+export const getProductImageBlobUrls     = (productId)       => getAttachmentBlobUrls('m_product', productId, { onlyImages: true });
+export const uploadProductAttachment     = (productId, file) => uploadAttachment('m_product', productId, file);
+export const deleteAllProductAttachments = (productId)       => deleteAllAttachments('m_product', productId);
 
 // Cari attachment pertama yang content type-nya gambar, lalu bentuk URL
 // binary-nya. URL ini memakai token dari localStorage sebagai query param
@@ -186,98 +277,6 @@ export async function getFirstProductImageBlobUrl(productId) {
   } catch {
     return null;
   }
-}
-// Alternatif lebih aman (tidak menaruh token di URL): fetch sebagai blob lalu
-// buat object URL lokal. Gunakan ini kalau endpoint tidak mendukung token via
-// query param, atau kalau ingin menghindari token tampil di Network tab URL.
-// PENTING: pemanggil WAJIB memanggil URL.revokeObjectURL(url) saat selesai
-// (mis. di useEffect cleanup) untuk mencegah memory leak.
-// export async function getProductImageBlobUrl(productId) {
-//   const attachments = await getProductAttachments(productId);
-//   const image = attachments.find(a => a.contentType?.startsWith('image/'));
-//   if (!image) return null;
-
-//   const token = localStorage.getItem('token');
-//   const res = await fetch(`/api/v1/models/m_product/${productId}/attachments/${encodeURIComponent(image.name)}`, {
-//     headers: { Authorization: `Bearer ${token}` },
-//   });
-//   if (!res.ok) return null;
-
-//   const blob = await res.blob();
-//   return URL.createObjectURL(blob);
-// }
-// Fetch SEMUA attachment image sebagai array blob URLs
-// Return: [{ url, name, index }, ...]
-// PENTING: pemanggil wajib revoke semua URL saat cleanup
-export async function getProductImageBlobUrls(productId) {
-  const attachments = await getProductAttachments(productId);
-  const images = attachments.filter(a => a.contentType?.startsWith('image/'));
-  if (images.length === 0) return [];
-
-  const token = localStorage.getItem('token');
-
-  const results = await Promise.all(
-    images.map(async (img, index) => {
-      try {
-        const res = await fetch(
-          `/api/v1/models/m_product/${productId}/attachments/${encodeURIComponent(img.name)}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (!res.ok) return null;
-        const blob = await res.blob();
-        return { url: URL.createObjectURL(blob), name: img.name, index };
-      } catch {
-        return null;
-      }
-    })
-  );
-  
-
-  return results.filter(Boolean);
-}
-
-// Ubah File (dari <input type="file">) jadi string base64 murni (tanpa
-// prefix "data:image/png;base64,"), sesuai bentuk yang diminta endpoint
-// upload attachment REST API-nya.
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result || "");
-      resolve(result.split(",")[1] || "");
-    };
-    reader.onerror = () => reject(new Error("Gagal membaca file."));
-    reader.readAsDataURL(file);
-  });
-}
-
-// Upload gambar baru sebagai AD_Attachment ke record M_Product.
-// PENTING (beda dari asumsi versi sebelumnya): endpoint ini menerima JSON
-// biasa {name, data(base64)} — BUKAN multipart/form-data — jadi tinggal
-// reuse idempiereApi() biasa, tidak perlu fetch()/FormData khusus.
-// Endpoint ini sifatnya "add/update by file name": kalau `name` yang
-// dikirim SAMA dengan attachment yang sudah ada, isinya akan DITIMPA
-// (bukan gagal) — makanya nama file di-prefix timestamp supaya tiap
-// upload baru selalu jadi entry baru, tidak menimpa gambar lama.
-export async function uploadProductAttachment(productId, file) {
-  const base64Data = await fileToBase64(file);
-  const uniqueName = `${Date.now()}-${file.name}`;
-  return idempiereApi(`/models/m_product/${productId}/attachments`, {
-    method: 'POST',
-    body: JSON.stringify({ name: uniqueName, data: base64Data }),
-  });
-}
-
-// Hapus SEMUA attachment/gambar dari record M_Product sekaligus.
-// CATATAN: REST API ini TIDAK menyediakan endpoint untuk hapus satu
-// attachment tertentu (by nama file) — DELETE di .../attachments selalu
-// menghapus seluruh attachment record itu. Kalau butuh hapus satu gambar
-// saja, satu-satunya cara lewat REST API publik-nya adalah: hapus semua,
-// lalu upload ulang gambar-gambar yang ingin dipertahankan.
-export async function deleteAllProductAttachments(productId) {
-  return idempiereApi(`/models/m_product/${productId}/attachments`, {
-    method: 'DELETE',
-  });
 }
 // ─────────────────────────────────────────────────────────────────────────────
   // TAMBAHKAN BLOK INI KE FILE src/utils/idempiereApi.jsx YANG SUDAH ADA
@@ -330,4 +329,31 @@ export async function deleteAllProductAttachments(productId) {
     return idempiereApi(`/models/${tableName.toLowerCase()}/${id}`, {
       method: "DELETE",
     });
+  }
+  export async function idempiereBlob(path, options = {}) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_BASE}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: options.signal,
+    });
+    if (!res.ok) {
+      if (res.status === 401) {
+        window.dispatchEvent(new CustomEvent('session-expired'));
+      }
+      throw new Error(`Gagal mengunduh file (HTTP ${res.status})`);
+    }
+    return res.blob();
+  }
+  // Unggah banyak file berurutan. Kegagalan satu file TIDAK menghentikan yang lain
+  // dan TIDAK melempar error — return [{ name, error }] (kosong = semua sukses).
+  export async function uploadAttachments(tableName, recordId, files = []) {
+    const failures = [];
+    for (const file of files) {
+      try {
+        await uploadAttachment(tableName, recordId, file);
+      } catch (err) {
+        failures.push({ name: file.name, error: err.message || 'Gagal mengunggah.' });
+      }
+    }
+    return failures;
   }

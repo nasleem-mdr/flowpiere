@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { idempiereApi } from '@/api/idempiereApi';
+import { idempiereApi, uploadAttachments } from '@/api/idempiereApi';
 import { getLoginInfo } from '@/shared/hooks/useLoginInfo';
 import { useUomConversion } from '@/shared/hooks/useUomConversion';
 import { saveRequisitionOffline, updatePendingRequisition } from '@/features/requisition/utils/offlineRequisitionStorage';
@@ -16,11 +16,17 @@ export function useRequisitionSubmit({ docTypeId, description: defaultDescriptio
     description = null,
     dateRequired = null,
     submitMode = 'complete',
-    // syncOptions hanya dipakai oleh proses auto-sync offline; pemanggilan
-    // normal dari UI cukup abaikan parameter ini.
+    // syncOptions: contextOverride/onReqIdCreated/offlineId dipakai oleh proses
+    // auto-sync offline. `attachments` (array File) dikirim dari form —
+    // pemanggilan lain cukup abaikan.
     syncOptions = {},
   ) => {
-    const { contextOverride = null, onReqIdCreated = null, offlineId = null } = syncOptions;
+    const {
+      contextOverride = null,
+      onReqIdCreated = null,
+      offlineId = null,
+      attachments = [],
+    } = syncOptions;
 
     if (cart.length === 0) {
       onError?.('Daftar permintaan masih kosong!');
@@ -78,6 +84,8 @@ export function useRequisitionSubmit({ docTypeId, description: defaultDescriptio
           requesterName,
           warehouseName: null,
           items: [...cart],
+          // Lampiran belum ikut antrean offline — UI menampilkan peringatan.
+          attachmentsSkipped: attachments.length,
         };
       } catch (err) {
         onError?.('Gagal menyimpan dokumen secara offline:\n' + err.message, 'Error');
@@ -93,6 +101,9 @@ export function useRequisitionSubmit({ docTypeId, description: defaultDescriptio
     // (auto-sync) untuk disimpan — retry berikutnya jadi mode edit, bukan
     // membuat header baru lagi (mencegah dokumen duplikat).
     let reqId = editRequisitionId;
+    // Hasil unggah lampiran: [{ name, error }]. Kegagalan lampiran TIDAK
+    // menggagalkan dokumen — cukup dilaporkan balik ke UI.
+    let attachmentFailures = [];
 
     try {
       const insertRequisitionLine = async (targetReqId, item) => {
@@ -152,6 +163,10 @@ export function useRequisitionSubmit({ docTypeId, description: defaultDescriptio
           await insertRequisitionLine(reqId, item);
         }
 
+        // Lampiran diunggah SEBELUM doc-action 'PR'/'CO' di bawah, supaya
+        // sudah ada saat workflow approval berjalan.
+        attachmentFailures = await uploadAttachments('m_requisition', reqId, attachments);
+
         if (currentStatus === 'NA' && submitMode === 'complete') {
           await idempiereApi(`/models/m_requisition/${reqId}`, {
             method: 'PUT',
@@ -187,6 +202,9 @@ export function useRequisitionSubmit({ docTypeId, description: defaultDescriptio
         for (const item of cart) {
           await insertRequisitionLine(reqId, item);
         }
+
+        // Lampiran diunggah SEBELUM doc-action 'CO' di bawah.
+        attachmentFailures = await uploadAttachments('m_requisition', reqId, attachments);
       }
 
       let docNo;
@@ -214,6 +232,7 @@ export function useRequisitionSubmit({ docTypeId, description: defaultDescriptio
         requesterName,
         warehouseName: null,
         items:         [...cart],
+        attachmentFailures,   // [{ name, error }] — kosong kalau semua sukses
       };
     } catch (err) {
       const action = submitMode === 'complete' ? 'menyelesaikan' : 'menyimpan draft';

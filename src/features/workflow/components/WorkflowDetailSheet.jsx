@@ -10,8 +10,7 @@ function formatWhen(iso) {
   return Number.isNaN(d.getTime()) ? String(iso)
     : d.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
-
-export default function WorkflowDetailSheet({ activity, detail, loading, error, submitting, onClose, onAction }) {
+export default function WorkflowDetailSheet({ activity, detail, loading, error, submitting, onClose, onAction, attachmentCount = 0, attachmentsLoading = false, onOpenAttachments }) {
   const [showHistory, setShowHistory] = useState(false);
   // Mirror klik line-item di form ZK → popup riwayat transaksi produk
   // (WFHistoryPopupHandler). Terbuka sebagai modal, bukan popup anchor.
@@ -122,6 +121,15 @@ export default function WorkflowDetailSheet({ activity, detail, loading, error, 
             ↪ Forward
           </button>
         )}
+        <button
+          type="button"
+          className="wf-btn wf-btn--ghost"
+          disabled={attachmentsLoading || attachmentCount === 0}
+          onClick={onOpenAttachments}
+          title={attachmentCount === 0 ? 'Tidak ada lampiran' : 'Lihat lampiran dokumen'}
+        >
+          📎 Lampiran{attachmentCount > 0 ? ` (${attachmentCount})` : ''}
+        </button>
       </div>
 
       <ProductHistoryModal history={history} onClose={closeHistory} />

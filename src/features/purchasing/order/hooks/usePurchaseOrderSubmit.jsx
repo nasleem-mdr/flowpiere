@@ -1,5 +1,6 @@
-/** ─────────────────────────────────────────────────────────────────────────────
-* usePurchaseOrderSubmit.jsx
+/** src/features/purchasing/order/hooks/usePurchaseOrderSubmit.jsx 
+ * ─────────────────────────────────────────────────────────────────────────────
+* src/features/purchasing/order/hooks/usePurchaseOrderSubmit.jsx
 *
 * MODE NORMAL (editOrderId = null): cart dikelompokan(groupBy) berdasar C_BPartner_ID, 
 * sehingga setiap vendor dibuatkan satu C_Order (header) + C_OrderLine (detail) baru.
@@ -46,10 +47,19 @@
 * padahal TIDAK ada workflow yang berjalan (Complete gagal, mis. field wajib
 * kosong), tetap dilempar sebagai error seperti sebelumnya.
 * Tambahan: submit() juga mengembalikan `pendingApproval` (boolean).
+*
+* ── LAMPIRAN (attachments) — pola sama dgn useRequisitionSubmit.jsx ─────────
+* submit(cart, { ..., attachments: File[] }) mengunggah lampiran ke SETIAP
+* C_Order yang diproses (mode normal: 1 PO per vendor -> file yang sama
+* diunggah ke tiap PO; mode edit: ke PO yang sedang diedit).
+* Diunggah SEBELUM doc-action 'CO'/'PR', supaya sudah ada saat workflow
+* approval berjalan. Kegagalan lampiran TIDAK menggagalkan PO — dilaporkan
+* lewat `results[i].attachmentFailures` ([{ name, error }]) dan digabung ke
+* dialog peringatan (hadError: true) bersama matchFailures.
 * ─────────────────────────────────────────────────────────────────────────────
 */
 import { useState, useCallback } from 'react';
-import { idempiereApi, fkId } from '@/api/idempiereApi';
+import { idempiereApi, fkId, uploadAttachments } from '@/api/idempiereApi';
 import { getLoginInfo } from '@/shared/hooks';
 import { useUomConversion } from '@/shared/hooks/useUomConversion';
 import { resolveCurrencyIso } from '@/utils/currency'; 
@@ -67,6 +77,19 @@ async function hasOpenWorkflow(orderId) {
     return (res?.records?.length ?? 0) > 0;
   } catch {
     return null;
+  }
+}
+
+// Unggah lampiran ke 1 C_Order. Tidak pernah melempar error: kegagalan
+// dikembalikan sbg [{ name, error }] supaya PO yang sudah terbuat tidak
+// ikut dianggap gagal (sama seperti useRequisitionSubmit).
+async function uploadOrderAttachments(orderId, files) {
+  if (!files || files.length === 0) return [];
+  try {
+    const failures = await uploadAttachments('c_order', orderId, files);
+    return Array.isArray(failures) ? failures : [];
+  } catch (err) {
+    return files.map(f => ({ name: f.name, error: err?.message || 'Gagal mengunggah' }));
   }
 }
 
@@ -240,7 +263,7 @@ export function usePurchaseOrderSubmit({ docTypeId, defaultDescription, onError 
   return { docNo: draftRes.DocumentNo || `PO-${orderId}`, status: 'Draft', currencyIso };
   }, []);
 
-  const submit = useCallback(async (cart, { warehouseId, description, submitMode = 'complete', editOrderId = null, dateOrdered = null } = {}) => {
+  const submit = useCallback(async (cart, { warehouseId, description, submitMode = 'complete', editOrderId = null, dateOrdered = null, attachments = [] } = {}) => {
     if (cart.length === 0) {
       onError?.('Daftar Purchase Order masih kosong!');
       return { results: null, hadError: true };
@@ -288,6 +311,7 @@ export function usePurchaseOrderSubmit({ docTypeId, defaultDescription, onError 
     setIsSubmitting(true);
     const results = [];
     const matchFailures = [];
+    const attachmentFailures = [];   // [{ documentNo, vendorName, name, error }] — gabungan semua PO
 
     try {
       if (editOrderId) {
@@ -467,6 +491,10 @@ export function usePurchaseOrderSubmit({ docTypeId, defaultDescription, onError 
           }
         }
 
+        // ── Lampiran: diunggah SEBELUM doc-action 'PR'/'CO' supaya sudah ada
+        //    saat workflow approval berjalan ───────────────────────────────
+        const editAttachFailures = await uploadOrderAttachments(editOrderId, attachments);
+
         // ── Reset workflow kalau status lama NA (hanya relevan utk complete) ──
         if (currentStatus === 'NA' && submitMode === 'complete') {
           await idempiereApi(`/models/c_order/${editOrderId}`, {
@@ -486,7 +514,9 @@ export function usePurchaseOrderSubmit({ docTypeId, defaultDescription, onError 
           date: new Date().toLocaleString('id-ID'),
           items: [...cart],
           total: cart.reduce((s, i) => s + i.Qty * (i.Price || 0), 0),
+          attachmentFailures: editAttachFailures,
         });
+        editAttachFailures.forEach(f => attachmentFailures.push({ documentNo: docNo, vendorName, ...f }));
 
       } else {
         // ══════════════════════════════════════════════════════════════════
@@ -540,6 +570,9 @@ export function usePurchaseOrderSubmit({ docTypeId, defaultDescription, onError 
             if (!ok) matchFailures.push(name);
           }
 
+          // Lampiran diunggah SEBELUM doc-action 'CO' di finalizeOrder.
+          const poAttachFailures = await uploadOrderAttachments(orderId, attachments);
+
           const { docNo, status, statusNote, currencyIso } = await finalizeOrder(orderId, submitMode, vendorName);
 
           results.push({
@@ -551,22 +584,39 @@ export function usePurchaseOrderSubmit({ docTypeId, defaultDescription, onError 
             date: new Date().toLocaleString('id-ID'),
             items,
             total: items.reduce((s, i) => s + i.Qty * (i.Price || 0), 0),
+            attachmentFailures: poAttachFailures,
           });
+          poAttachFailures.forEach(f => attachmentFailures.push({ documentNo: docNo, vendorName, ...f }));
         }
       }
 
-      if (matchFailures.length > 0) {
+      const pendingApproval = results.some(r => r.status === 'Pending Approval');
+
+      if (matchFailures.length > 0 || attachmentFailures.length > 0) {
+        const sections = [];
+        if (matchFailures.length > 0) {
+          sections.push(
+            `${matchFailures.length} baris perlu dicek manual (link status FPB dan/atau baris yang gagal dihapus):\n` +
+            matchFailures.map(n => `• ${n}`).join('\n')
+          );
+        }
+        if (attachmentFailures.length > 0) {
+          sections.push(
+            `${attachmentFailures.length} lampiran gagal diunggah:\n` +
+            attachmentFailures.map(f => `• ${f.documentNo} — ${f.name}: ${f.error}`).join('\n') +
+            `\nUnggah ulang lewat window Purchase Order di iDempiere.`
+          );
+        }
         onError?.(
-          `PO berhasil diproses, tapi ada ${matchFailures.length} peringatan yang perlu dicek manual:\n` +
-          matchFailures.map(n => `• ${n}`).join('\n') +
-          `\n\nIni tidak mempengaruhi baris PO lain yang sudah berhasil dibuat/diupdate, tapi bagian yang ` +
-          `disebutkan di atas (link status FPB dan/atau baris yang gagal dihapus) perlu dicek manual di iDempiere.`,
-          'Peringatan: Ada Baris Perlu Dicek Manual'
+          `PO berhasil diproses, tapi ada peringatan yang perlu dicek manual:\n\n` +
+          sections.join('\n\n') +
+          `\n\nIni tidak mempengaruhi PO/baris lain yang sudah berhasil dibuat atau diupdate.`,
+          'Peringatan: Perlu Dicek Manual'
         );
-        return { results, hadError: true, pendingApproval: results.some(r => r.status === 'Pending Approval') };
+        return { results, hadError: true, pendingApproval, attachmentFailures };
       }
 
-      return { results, hadError: false, pendingApproval: results.some(r => r.status === 'Pending Approval') };
+      return { results, hadError: false, pendingApproval, attachmentFailures };
     } catch (err) {
       onError?.(
         `Gagal memproses Purchase Order:\n\n${err.message}` +

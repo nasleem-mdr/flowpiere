@@ -1,0 +1,44 @@
+/* Tambahkan ke WorkflowApproval.css (atau import sebagai file terpisah) */
+.wf-att__overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.wf-att {
+  background: #fff; border-radius: 10px;
+  width: min(1100px, 100%); height: min(88vh, 100%);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.wf-att__bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-bottom: 1px solid #e5e7eb;
+}
+.wf-att__title { flex: 1; font-size: 14px; }
+.wf-att__zoom { display: inline-flex; align-items: center; gap: 4px; }
+.wf-att__pct {
+  min-width: 52px; border: 1px solid #d1d5db; background: #fff;
+  border-radius: 6px; padding: 3px 6px; font-size: 12px; cursor: pointer;
+}
+.wf-att__tabs {
+  display: flex; gap: 6px; padding: 8px 14px; overflow-x: auto;
+  border-bottom: 1px solid #e5e7eb;
+}
+.wf-att__tab {
+  flex: 0 0 auto; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border: 1px solid #d1d5db; background: #f9fafb; border-radius: 16px;
+  padding: 4px 12px; font-size: 12px; cursor: pointer;
+}
+.wf-att__tab--active { background: #111827; color: #fff; border-color: #111827; }
+.wf-att__stage {
+  flex: 1; position: relative; overflow: hidden; background: #f3f4f6;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none;
+}
+.wf-att__stage--grab { cursor: grab; }
+.wf-att__stage--grab:active { cursor: grabbing; }
+.wf-att__img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  user-select: none; transform-origin: center center;
+}
+.wf-att__pdf { width: 100%; height: 100%; border: 0; background: #fff; }

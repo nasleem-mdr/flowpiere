@@ -1,15 +1,19 @@
 // pages/WorkflowApprovalContainer.jsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useWorkflowActivities, useWorkflowDecision, useWorkflowDocumentDetail } from '../hooks';
-import { WorkflowActivityCard, WorkflowDetailSheet, DecisionModal, ForwardModal } from '../components';
+import { useWorkflowActivities, useWorkflowDecision, useWorkflowDocumentDetail, useWorkflowAttachments } from '../hooks';
+import { WorkflowActivityCard, WorkflowDetailSheet, DecisionModal, ForwardModal, AttachmentViewerModal } from '../components';
 import '@/css/WorkflowApproval.css';
 import '@/css/WorkflowApproval.timeline.css';
+import '@/css/WorkflowApproval.attachment.css';
 export default function WorkflowApprovalContainer() {
   const { activities, loading, error, lastUpdated, fetchActivities, removeActivity } =
     useWorkflowActivities({ autoRefreshMs: 60000 });
   const { decide, submitting, error: decisionError, clearError } = useWorkflowDecision();
   const { detail, loading: detailLoading, error: detailError, loadDetail, clearDetail } =
     useWorkflowDocumentDetail();
+  const { attachments, loading: attLoading, loadAttachments, clearAttachments, fetchAttachmentBlob } =
+    useWorkflowAttachments();
+  const [attachOpen, setAttachOpen] = useState(false);
 
   const [selectedId, setSelectedId] = useState(null);
   const [keyword, setKeyword]     = useState('');
@@ -21,12 +25,17 @@ export default function WorkflowApprovalContainer() {
     () => activities.find((a) => a.id === selectedId) || null,
     [activities, selectedId]
   );
-
   useEffect(() => {
-    if (selected) loadDetail(selected);
-    else clearDetail();
-  }, [selected, loadDetail, clearDetail]);
-
+    setAttachOpen(false);
+    if (selected) {
+      loadDetail(selected);
+      loadAttachments(selected);   // <- baris ini yang memicu request /attachments
+    } else {
+      clearDetail();
+      clearAttachments();
+    }
+  }, [selected, loadDetail, clearDetail, loadAttachments, clearAttachments]);
+  
   useEffect(() => {
     if (!selectedId && activities.length > 0) setSelectedId(activities[0].id);
   }, [activities, selectedId]);
@@ -151,6 +160,9 @@ export default function WorkflowApprovalContainer() {
             submitting={submitting}
             onClose={() => setSelectedId(null)}
             onAction={handleAction}
+            attachmentCount={attachments.length}
+            attachmentsLoading={attLoading}
+            onOpenAttachments={() => setAttachOpen(true)}
           />
         </section>
       </div>
@@ -170,7 +182,12 @@ export default function WorkflowApprovalContainer() {
         onClose={() => setForwardOpen(false)}
         onSubmit={handleForwardSubmit}
       />
-
+      <AttachmentViewerModal
+        open={attachOpen}
+        files={attachments}
+        fetchFile={fetchAttachmentBlob}
+        onClose={() => setAttachOpen(false)}
+      />
       {toast && <div className={`wf-toast wf-toast--${toast.tone}`}>{toast.msg}</div>}
     </div>
   );

@@ -9,8 +9,10 @@ import {
   BarcodeScanner,
   ImportIcon, 
   ShoppingCartIcon,
-  ScanIcon, 
+  ScanIcon,
 }from '@/shared/components';
+import { useAttachments } from '@/shared/hooks/useAttachments';
+import AttachmentModal from '@/shared/components/AttachmentModal';
 
 import { 
   useIsDesktop, 
@@ -105,7 +107,9 @@ const PurchasingContainer = () => {
   const [loadingEditOrder, setLoadingEditOrder] = useState(false);
   // Tanggal pemesanan — dasar tanggal PO; di Cash Purchase juga dasar Receipt, Invoice & AP Payment.
   const [dateOrdered, setDateOrdered] = useState(todayLocalISO);
-  
+  const [attachOpen, setAttachOpen] = useState(false);
+  const att = useAttachments('c_order', editOrderId);
+  const attachCount = att.staged.length + att.existing.length;
   const searchRef = useRef(null);
   const alert = (message, title = 'Perhatian') => setDialog({ isOpen: true, title, message });
 
@@ -617,11 +621,13 @@ useEffect(() => {
       submitMode,
       editOrderId,   // ← null di mode normal, terisi di mode edit
       dateOrdered,
+      attachments: att.stagedFiles,   // File[] — diunggah ke tiap PO oleh hook
     });
     if (!results || results.length === 0) return;
   
     setSuccessData(results);
     clearCart();
+    att.clearStaged();
     setCartOpen(false);
     setEditOrderId(null);
     setEditOrderDocNo(null);
@@ -700,7 +706,10 @@ useEffect(() => {
         onClose={() => setImportOpen(false)}
         onImport={handleImportFromRequisition}
       />
-
+      <AttachmentModal
+        isOpen={attachOpen} onClose={() => setAttachOpen(false)}
+        att={att} canEdit={canSubmitPO} title="📎 Lampiran Purchase Order"
+      />
       {/* Top Bar */}
       <div className='header-content'>
       <span style={{ 
@@ -726,6 +735,19 @@ useEffect(() => {
             padding: '2px 8px 2px 10px', // Padding kiri sedikit lebih besar untuk label
           }}
         >
+          <button
+          type="button"
+          onClick={() => setAttachOpen(true)}
+          title="Lampiran (gambar / PDF)"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '4px', height: '25px',
+            background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
+            borderRadius: '3px', padding: '3px 10px', fontSize: '11px', fontWeight: 600,
+            color: '#374151', cursor: 'pointer', whiteSpace: 'nowrap',
+          }}
+        >
+          📎 Lampiran{attachCount > 0 ? ` (${attachCount})` : ''}
+        </button>
           <span
             style={{
               fontSize: '10px',

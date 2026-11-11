@@ -40,6 +40,10 @@ import { COLOR, RADIUS } from '@/utils/styleTokens';
 
 // 7. Context
 import { useAccess } from '@/context/AccessContext';
+// import { useRequisitionAttachments } from '@/features/requisition/hooks/useRequisitionAttachments';
+// import RequisitionAttachmentModal from '@/features/requisition/components/RequisitionAttachmentModal';
+import { useAttachments } from '@/shared/hooks/useAttachments';
+import AttachmentModal from '@/shared/components/AttachmentModal';
 
 // 8. Styles
 import '@/css/Header.css';
@@ -73,10 +77,13 @@ const RequisitionContainer = () => {
   const [dateRequired, setDateRequired] = useState(
     () => new Date().toISOString().split('T')[0]
   );
+  const [attachOpen, setAttachOpen] = useState(false);
   // ── edit mode state ─────────────────────────────────────────────────────────
   const [editRequisitionId, setEditRequisitionId] = useState(null);
   const [isEditMode, setIsEditMode]               = useState(false);
-
+  //const att = useRequisitionAttachments(editRequisitionId);
+  const att = useAttachments('m_requisition', editRequisitionId);   
+  const attachCount = att.staged.length + att.existing.length;
   // Distabilkan dengan useCallback — sebelumnya function baru dibuat tiap
   // render, ikut jadi salah satu sumber referensi tidak stabil yang dikirim
   // ke useRequisitionSubmit/useOfflineRequisitionSync di bawah.
@@ -369,7 +376,8 @@ useEffect(() => {
   const handleSubmit = async (mode = 'complete') => {
     const result = await submit(
       cart, requesterName, selectedWarehouse?.id,
-      editRequisitionId, description, dateRequired, mode
+      editRequisitionId, description, dateRequired, mode,
+      { attachments: att.stagedFiles }
     );
     // submit() sekarang selalu mengembalikan object dengan flag `success`
     // (bukan null saat gagal), jadi cek eksplisit di sini — sebelumnya
@@ -378,6 +386,7 @@ useEffect(() => {
     if (result?.success) {
       setSuccessData({ ...result, warehouseName: selectedWarehouse?.name });
       clearCart();
+      att.clearStaged();
       setCartOpen(false);
       setSuccessOpen(true);
       setIsEditMode(false);
@@ -385,6 +394,20 @@ useEffect(() => {
       setDescription('');
       setDateRequired(new Date().toISOString().split('T')[0]);
       navigate('/requisition', { replace: true, state: {} });
+      
+    }
+    if (result.attachmentFailures?.length) {  // ← baru
+      alert(
+        `Dokumen tersimpan, tetapi ${result.attachmentFailures.length} lampiran gagal diunggah:\n` +
+        result.attachmentFailures.map(f => `• ${f.name}: ${f.error}`).join('\n') +
+        '\n\nUnggah ulang lewat window Requisition di iDempiere.',
+        'Sebagian Lampiran Gagal'
+      );
+    } else if (result.isOffline && result.attachmentsSkipped > 0) {
+      alert(
+        `Dokumen disimpan offline, tetapi ${result.attachmentsSkipped} lampiran tidak ikut tersimpan. Unggah ulang setelah dokumen tersinkron.`,
+        'Lampiran Belum Terunggah'
+      );
     }
     // result.success === false: dialog error sudah ditampilkan oleh
     // onError di dalam useRequisitionSubmit, tidak perlu ditangani lagi di sini.
@@ -436,7 +459,11 @@ useEffect(() => {
         onDetected={handleBarcodeDetected}
         onClose={() => setScannerOpen(false)}
       />
-
+      <AttachmentModal
+        isOpen={attachOpen} onClose={() => setAttachOpen(false)}
+        att={att} canEdit={canSubmitRequisition} title="📎 Lampiran Requisition"
+      />
+      
       {/* ── Top Bar ─────────────────────────────────────────────────────── */}
       <div className='header-content'>
        
@@ -459,6 +486,21 @@ useEffect(() => {
         </span>
         {/* ── Date Required + Warehouse ─────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        
+        <button
+          type="button"
+          onClick={() => setAttachOpen(true)}
+          title="Lampiran (gambar / PDF)"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '4px', height: '25px',
+            background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
+            borderRadius: '3px', padding: '3px 10px', fontSize: '11px', fontWeight: 600,
+            color: '#374151', cursor: 'pointer', whiteSpace: 'nowrap',
+          }}
+        >
+          📎 Lampiran{attachCount > 0 ? ` (${attachCount})` : ''}
+        </button>
+
 
         {/* Date Required */}
         <div style={{
