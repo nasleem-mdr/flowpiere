@@ -25,7 +25,8 @@ import {
   ChargePickerModal, 
   InventoryPickerModal, 
   InternalUseSuccessModal, 
-  InternalUseCartSidebar 
+  InternalUseCartSidebar,
+  RequisitionToInternalUseModal,
 } from '@/features/material/internaluse/components';
 
 import { 
@@ -85,6 +86,12 @@ const InternalUseContainer = () => {
   const canSubmitIU = canEdit('internalUse');
   const location = useLocation();
 
+  const [reqImportOpen, setReqImportOpen] = useState(false);
+
+  const handleImportFromRequisition = useCallback((items, requisition) => {
+    addItems(items);
+    alert(`${items.length} produk berhasil diimport dari FPB ${requisition.DocumentNo}.`, 'Import Berhasil');
+  }, [addItems]);
 
   useEffect(() => {
     const init = async () => {
@@ -410,7 +417,14 @@ const handleSubmit = async (submitMode = 'complete') => {
         onClose={() => setPickerOpen(false)}
         onImport={handleImportFromPicker}
       />
-
+      <RequisitionToInternalUseModal
+        isOpen={reqImportOpen}
+        defaultWarehouseId={warehouseInfo?.id}
+        resolveProductStock={resolveProductStock} // ← Tambahkan baris ini
+        onClose={() => setReqImportOpen(false)}
+        onImport={handleImportFromRequisition}
+      />
+      
       <div className='header-content'>
       <span style={{ 
         color: '#0e0101', 
@@ -503,6 +517,16 @@ const handleSubmit = async (submitMode = 'complete') => {
                 <path d="M14 14h.01M14 17h.01M17 14h.01M17 17h.01M20 14h.01M20 17h.01M20 20h.01M17 20h.01M14 20h.01"/>
               </svg>
             </button>
+  
+            <button
+              onClick={() => setReqImportOpen(true)}
+              title="Import dari Requisition (FPB)"
+              style={{
+                background: COLOR.vendor, border: 'none', color: '#fff',
+                borderRadius: RADIUS.md, padding: '10px 14px', cursor: 'pointer',
+                fontSize: '18px', lineHeight: 1, flexShrink: 0,
+              }}
+            >📋</button>
 
             <button
               onClick={() => setPickerOpen(true)}

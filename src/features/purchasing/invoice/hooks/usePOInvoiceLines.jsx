@@ -1,189 +1,311 @@
 /** ─────────────────────────────────────────────────────────────────────────────
 * usePOInvoiceLines.jsx
-* Pengganti useProductSearch.jsx — karena semua pembelian WAJIB lewat PO,
-* container ini tidak lagi menampilkan grid produk, tapi grid PO yang SUDAH
-* Complete dan MASIH ada sisa qty belum ditagih.
+* Grid PO (Complete) yang masih bisa ditagihkan untuk Purchase Invoice.
 *
-* STRATEGI PERHITUNGAN SISA QTY (supaya tidak N+1 request per PO):
-*   1. Fetch semua C_Order Complete (IsSOTrx=false, DocStatus='CO') — 1 call.
-*   2. Fetch SEMUA C_OrderLine milik PO-PO itu sekaligus — 1 call.
-*   3. Fetch SEMUA C_InvoiceLine yg C_OrderLine_ID-nya termasuk di atas,
-*      dikecualikan invoice Voided/Reversed — 1 call.
-*   4. Agregasi di JS: qtyInvoiced per C_OrderLine_ID, lalu qtyOutstanding
-*      per line = QtyOrdered - qtyInvoiced.
+* STRATEGI (tetap tanpa N+1 request per PO):
+*   1. Ambil PO Complete per halaman (IsSOTrx=false, DocStatus='CO').
+*   2. Ambil SEMUA C_OrderLine milik PO halaman itu — dipecah per CHUNK id
+*      dan dibaca sampai habis ($skip), bukan $top tunggal yang bisa terpotong.
+*   3. Ambil SEMUA C_InvoiceLine untuk order line tsb (juga chunk + paging),
+*      lalu ambil DocStatus invoice-nya dan buang yang VO/RE di JS.
+*   4. Agregasi di JS: qtyInvoiced per C_OrderLine_ID → qtyOutstanding.
 *
-* ⚠️ Filter nested `C_Invoice_ID.DocStatus notin (...)` BELUM PERNAH DITES
-* (Postman lagi down saat ini) — kalau ternyata tidak didukung versi REST
-* API Anda, sudah ada fallback try/catch di bawah (ambil semua tanpa filter
-* status, sedikit overcount kalau ada invoice voided — cek manual kalau
-* sering kejadian). WAJIB dites ulang begitu Postman normal.
-*
-* PO yang outstanding-nya 0 TETAP di-fetch (browse tidak aneh), tapi
-* ditandai `isFullyInvoiced: true` — card-nya di-gray-out, bukan hilang.
+* PERBAIKAN dari versi sebelumnya:
+*   - Order line / invoice line dulu diambil dengan $top tunggal (1000/2000)
+*     tanpa $skip. Kalau datanya lebih banyak, baris terpotong → PO yang
+*     barisnya tidak ikut terambil punya lines=[] → isFullyInvoiced=true →
+*     card ter-disable. Sekarang dibaca sampai habis.
+*   - Key Map dinormalisasi ke String di kedua sisi (order, order line,
+*     invoice), jadi tidak ada mismatch number vs string / object FK.
+*   - PO tanpa baris TIDAK lagi dianggap "sudah lunas" (isFullyInvoiced hanya
+*     true bila ada baris dan semua sisa qty = 0). PO tanpa baris disembunyikan.
+*   - Gagal fetch invoice line tidak lagi ditelan diam-diam (dulu → dianggap
+*     belum ada invoice sama sekali, berisiko double-invoice). Sekarang error
+*     dilempar dan dicatat di state `error`.
+*   - Hook sekarang menyediakan hasMore / loadingMore / fetchNextPage yang
+*     sudah dipakai VendorInvoiceContainer (sebelumnya undefined).
+*   - Kutip tunggal pada kata kunci pencarian di-escape.
 * ─────────────────────────────────────────────────────────────────────────────
 */
 
-import { 
-  useState, 
-  useCallback, 
+import {
+  useState,
+  useCallback,
+  useRef,
 } from 'react';
 
-import { 
-  idempiereApi, 
-  fkId, 
-  fkLabel, 
+import {
+  idempiereApi,
+  fkId,
+  fkLabel,
 } from '@/api/idempiereApi';
+
+const ORDER_PAGE_SIZE      = 50;   // jumlah PO per request
+const MIN_VISIBLE_PER_LOAD = 20;   // target minimal PO tampil per "muat"
+const MAX_SCAN_ROUNDS      = 6;    // batas putaran scan PO per "muat"
+const ID_CHUNK             = 25;   // jumlah id per filter "or" (hindari URL kepanjangan)
+const ROW_PAGE_SIZE        = 200;  // ukuran halaman saat baca detail
+const MAX_ROW_PAGES        = 50;   // pengaman loop
+
+// true  → PO yang sudah punya invoice (partial/full) disembunyikan (perilaku sebelumnya).
+// false → PO yang masih punya sisa qty tetap tampil (partial), fully-invoiced di-gray-out
+//         dan bisa ditampilkan lewat checkbox "Tampilkan semua" di container.
+const HIDE_PARTIALLY_INVOICED = true;
+
+/* ── helpers ─────────────────────────────────────────────────────────────── */
+
+// Normalisasi apa pun (angka, string, objek FK) menjadi String id — dipakai untuk key Map/Set.
+const idOf = (v) => {
+  if (v == null) return null;
+  const x = fkId(v);
+  if (x != null) return String(x);
+  if (typeof v === 'object') return v.id != null ? String(v.id) : null;
+  return String(v);
+};
+
+const chunk = (arr, size) => {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+};
+
+const orFilter = (field, ids) => ids.map(id => `${field} eq ${id}`).join(' or ');
+
+// Baca SEMUA halaman sebuah query (path sudah berisi $filter/$select/$orderby).
+async function fetchAllRows(path) {
+  const rows = [];
+  let skip = 0;
+  for (let page = 0; page < MAX_ROW_PAGES; page++) {
+    const res = await idempiereApi(`${path}&$top=${ROW_PAGE_SIZE}&$skip=${skip}`);
+    const recs = Array.isArray(res?.records) ? res.records : [];
+    if (recs.length === 0) break;
+    rows.push(...recs);
+    skip += recs.length;
+    const total = res?.['row-count'];
+    if (typeof total === 'number' && skip >= total) break;
+  }
+  return rows;
+}
+
+/* ── bangun PO + hitung sisa qty untuk satu halaman order ────────────────── */
+
+async function buildPOs(orders) {
+  const stats = { orders: orders.length, lines: 0, invoiceLines: 0, invoices: 0, voidedOrReversed: 0 };
+  if (orders.length === 0) return { merged: [], stats };
+
+  const orderIds = orders.map(o => idOf(o.id ?? o.C_Order_ID)).filter(Boolean);
+
+  // 2. Order line (chunk per PO + paging)
+  const lineChunks = await Promise.all(
+    chunk(orderIds, ID_CHUNK).map(ids => fetchAllRows(
+      `/models/c_orderline?$filter=${orFilter('C_Order_ID', ids)}` +
+      `&$select=C_OrderLine_ID,C_Order_ID,M_Product_ID,C_UOM_ID,QtyOrdered,QtyEntered,PriceEntered,PriceActual` +
+      `&$orderby=C_OrderLine_ID`
+    ))
+  );
+  const lines = lineChunks.flat();
+  stats.lines = lines.length;
+
+  // 3a. Invoice line untuk order line tsb (chunk + paging). Filter nested
+  //     c_invoice_id.DocStatus tidak didukung → status dicek terpisah di 3b.
+  const lineIds = [...new Set(lines.map(l => idOf(l.id ?? l.C_OrderLine_ID)).filter(Boolean))];
+  const invLineChunks = await Promise.all(
+    chunk(lineIds, ID_CHUNK).map(ids => fetchAllRows(
+      `/models/c_invoiceline?$filter=${orFilter('C_OrderLine_ID', ids)}` +
+      `&$select=C_InvoiceLine_ID,C_OrderLine_ID,QtyInvoiced,C_Invoice_ID` +
+      `&$orderby=C_InvoiceLine_ID`
+    ))
+  );
+  const rawInvoiceLines = invLineChunks.flat();
+  stats.invoiceLines = rawInvoiceLines.length;
+
+  // 3b. DocStatus invoice-invoice tsb → buang yang Voided / Reversed.
+  const invoiceIds = [...new Set(rawInvoiceLines.map(il => idOf(il.C_Invoice_ID)).filter(Boolean))];
+  stats.invoices = invoiceIds.length;
+
+  const excludedInvoiceIds = new Set();
+  if (invoiceIds.length > 0) {
+    const invChunks = await Promise.all(
+      chunk(invoiceIds, ID_CHUNK).map(ids => fetchAllRows(
+        `/models/c_invoice?$filter=${orFilter('C_Invoice_ID', ids)}` +
+        `&$select=C_Invoice_ID,DocStatus&$orderby=C_Invoice_ID`
+      ))
+    );
+    invChunks.flat().forEach(inv => {
+      const status = inv.DocStatus?.id ?? inv.DocStatus;
+      if (status === 'VO' || status === 'RE') excludedInvoiceIds.add(idOf(inv.id ?? inv.C_Invoice_ID));
+    });
+  }
+  stats.voidedOrReversed = excludedInvoiceIds.size;
+
+  // 4. Agregasi qty tertagih per order line
+  const invoicedByLine = new Map();
+  rawInvoiceLines.forEach(il => {
+    if (excludedInvoiceIds.has(idOf(il.C_Invoice_ID))) return;
+    const olId = idOf(il.C_OrderLine_ID);
+    if (olId == null) return;
+    invoicedByLine.set(olId, (invoicedByLine.get(olId) || 0) + parseFloat(il.QtyInvoiced || 0));
+  });
+
+  const linesByOrder = new Map();
+  lines.forEach(l => {
+    const oKey   = idOf(l.C_Order_ID);
+    const lineId = l.id ?? l.C_OrderLine_ID;
+    const qtyOrdered     = parseFloat(l.QtyOrdered ?? l.QtyEntered ?? 0);
+    const qtyInvoiced    = invoicedByLine.get(idOf(lineId)) || 0;
+    const qtyOutstanding = Math.max(qtyOrdered - qtyInvoiced, 0);
+    // Rasio konversi UOM (QtyOrdered base vs QtyEntered UOM pilihan user) —
+    // dipakai POLineDetailSheet supaya "Sisa X Kotak" & QtyEntered konsisten.
+    const qtyEnteredOriginal = parseFloat(l.QtyEntered ?? qtyOrdered ?? 0);
+    const multiplyRate = qtyEnteredOriginal > 0 ? (qtyOrdered / qtyEnteredOriginal) : 1;
+    if (!linesByOrder.has(oKey)) linesByOrder.set(oKey, []);
+    linesByOrder.get(oKey).push({
+      C_OrderLine_ID: lineId,
+      M_Product_ID: fkId(l.M_Product_ID) ?? l.M_Product_ID?.id,
+      ProductName:  fkLabel(l.M_Product_ID) || `Produk #${fkId(l.M_Product_ID)}`,
+      C_UOM_ID:     fkId(l.C_UOM_ID) ?? l.C_UOM_ID?.id,
+      UomName:      fkLabel(l.C_UOM_ID) || '',
+      PriceEntered: parseFloat(l.PriceEntered ?? l.PriceActual ?? 0),
+      multiplyRate,
+      qtyOrdered, qtyInvoiced, qtyOutstanding,
+    });
+  });
+
+  const merged = orders.map(o => {
+    const oId = o.id ?? o.C_Order_ID;
+    const orderLines = linesByOrder.get(idOf(oId)) || [];
+    const totalOutstanding = orderLines.reduce((s, l) => s + l.qtyOutstanding, 0);
+    const totalInvoiced    = orderLines.reduce((s, l) => s + l.qtyInvoiced, 0);
+    return {
+      C_Order_ID: oId,
+      DocumentNo: o.DocumentNo,
+      C_BPartner_ID: fkId(o.C_BPartner_ID) ?? o.C_BPartner_ID?.id,
+      VendorName: fkLabel(o.C_BPartner_ID) || '',
+      C_BPartner_Location_ID: fkId(o.C_BPartner_Location_ID) ?? o.C_BPartner_Location_ID?.id,
+      DateOrdered: o.DateOrdered,
+      GrandTotal: parseFloat(o.GrandTotal ?? 0),
+      lines: orderLines,
+      // PO tanpa baris BUKAN "lunas" — jangan ikut ter-disable karena data kosong.
+      isFullyInvoiced: orderLines.length > 0 && totalOutstanding < 0.01,
+      hasAnyInvoice: totalInvoiced > 0.01,   // sudah exclude invoice VO/RE
+    };
+  });
+
+  return { merged, stats };
+}
+
+/* ── hook ────────────────────────────────────────────────────────────────── */
 
 export function usePOInvoiceLines() {
   const [pos, setPos] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [error, setError] = useState(null);
   const [searchValue, setSearchValue] = useState('');
 
-  const fetchPOs = useCallback(async (term = '') => {
-    setLoading(true);
-    try {
-      const t = term.trim();
-      const searchFilter = t
-        ? ` and (contains(upper(DocumentNo), upper('${t}')) or contains(upper(C_BPartner_ID.Name), upper('${t}')))`
-        : '';
+  const skipRef        = useRef(0);      // offset PO mentah yang sudah discan
+  const termRef        = useRef('');
+  const seqRef         = useRef(0);      // anti race antar request
+  const busyMoreRef    = useRef(false);
+  const hasMoreRef     = useRef(false);
+
+  // Scan PO mentah per halaman sampai terkumpul cukup PO yang layak tampil.
+  const loadBatch = useCallback(async (term, startSkip) => {
+    const t = term.trim().replace(/'/g, "''");
+    const searchFilter = t
+      ? ` and (contains(upper(DocumentNo), upper('${t}')) or contains(upper(C_BPartner_ID.Name), upper('${t}')))`
+      : '';
+
+    let skip = startSkip;
+    let exhausted = false;
+    const items = [];
+    const totals = { scanned: 0, noLines: 0, hiddenByInvoice: 0 };
+
+    for (let round = 0; round < MAX_SCAN_ROUNDS; round++) {
       const poRes = await idempiereApi(
         `/models/c_order?$filter=IsSOTrx eq false and DocStatus eq 'CO'${searchFilter}` +
         `&$select=C_Order_ID,DocumentNo,C_BPartner_ID,C_BPartner_Location_ID,DateOrdered,GrandTotal` +
-        `&$orderby=DateOrdered desc&$top=100`
+        `&$orderby=C_Order_ID desc&$top=${ORDER_PAGE_SIZE}&$skip=${skip}`
       );
-      const orders = Array.isArray(poRes.records) ? poRes.records : [];
-      if (orders.length === 0) { setPos([]); return; }
+      const orders = Array.isArray(poRes?.records) ? poRes.records : [];
+      skip += orders.length;
+      const rowCount = poRes?.['row-count'];
+      exhausted = orders.length === 0 || (typeof rowCount === 'number' && skip >= rowCount);
+      totals.scanned += orders.length;
 
-      const orderIds = orders.map(o => o.id ?? o.C_Order_ID);
-      const orderFilterStr = orderIds.map(id => `C_Order_ID eq ${id}`).join(' or ');
-
-      const linesRes = await idempiereApi(
-        `/models/c_orderline?$filter=${orderFilterStr}` +
-        `&$select=C_OrderLine_ID,C_Order_ID,M_Product_ID,C_UOM_ID,QtyOrdered,QtyEntered,PriceEntered,PriceActual&$top=1000`
-      );
-      const lines = Array.isArray(linesRes.records) ? linesRes.records : [];
-      if (lines.length === 0) { setPos([]); return; }
-
-      const lineIds = lines.map(l => l.id ?? l.C_OrderLine_ID);
-      const lineFilterStr = lineIds.map(id => `C_OrderLine_ID eq ${id}`).join(' or ');
-
-      let invoiceLines = [];
-      try {
-        // Step 1: ambil SEMUA invoice line untuk order line ini, TANPA filter
-        // status (nested filter c_invoice_id.DocStatus dengan operator apapun
-        // selain 'eq' tidak didukung REST plugin ini — sudah dicoba 'notin' dan
-        // 'ne', keduanya gagal dengan "Unsupported operator").
-        const invLinesRes = await idempiereApi(
-          `/models/c_invoiceline?$filter=${lineFilterStr}` +
-          `&$select=C_OrderLine_ID,QtyInvoiced,C_Invoice_ID&$top=2000`
-        );
-        const rawInvoiceLines = Array.isArray(invLinesRes.records) ? invLinesRes.records : [];
-
-        // Step 2: kumpulkan C_Invoice_ID unik, fetch DocStatus-nya sekaligus
-        // (operator 'eq' + 'or' dipastikan didukung — sudah dipakai di banyak
-        // tempat lain di codebase ini).
-        const invoiceIds = [...new Set(
-          rawInvoiceLines.map(il => fkId(il.C_Invoice_ID) ?? il.C_Invoice_ID?.id).filter(Boolean)
-        )];
-
-        let voidedOrReversedIds = new Set();
-        if (invoiceIds.length > 0) {
-          const invoiceFilterStr = invoiceIds.map(id => `C_Invoice_ID eq ${id}`).join(' or ');
-          const invStatusRes = await idempiereApi(
-            `/models/c_invoice?$filter=${invoiceFilterStr}&$select=C_Invoice_ID,DocStatus&$top=${invoiceIds.length}`
-          );
-          const invStatusRecords = Array.isArray(invStatusRes.records) ? invStatusRes.records : [];
-          invStatusRecords.forEach(inv => {
-            const status = inv.DocStatus?.id ?? inv.DocStatus;
-            if (status === 'VO' || status === 'RE') {
-              voidedOrReversedIds.add(inv.id ?? inv.C_Invoice_ID);
-            }
-          });
-        }
-
-        // Step 3: exclude invoice line yang C_Invoice_ID-nya VO/RE — di JS.
-        invoiceLines = rawInvoiceLines.filter(il => {
-          const invId = fkId(il.C_Invoice_ID) ?? il.C_Invoice_ID?.id;
-          return !voidedOrReversedIds.has(invId);
+      if (orders.length > 0) {
+        const { merged, stats } = await buildPOs(orders);
+        merged.forEach(po => {
+          if (po.lines.length === 0) { totals.noLines++; return; }
+          if (HIDE_PARTIALLY_INVOICED && po.hasAnyInvoice) { totals.hiddenByInvoice++; return; }
+          items.push(po);
         });
-      } catch (err) {
-        console.error('[usePOInvoiceLines] gagal fetch invoice lines (2-step):', err.message);
-        invoiceLines = [];
+        console.debug('[usePOInvoiceLines] halaman', { skip, ...stats });
       }
 
-      const invoicedByLine = new Map();
-      invoiceLines.forEach(il => {
-        const olId = fkId(il.C_OrderLine_ID) ?? il.C_OrderLine_ID?.id;
-        if (olId == null) return;
-        invoicedByLine.set(String(olId), (invoicedByLine.get(String(olId)) || 0) + parseFloat(il.QtyInvoiced || 0));
-      });
+      if (exhausted || items.length >= MIN_VISIBLE_PER_LOAD) break;
+    }
 
-      const linesByOrder = new Map();
-      lines.forEach(l => {
-        const oId    = fkId(l.C_Order_ID) ?? l.C_Order_ID?.id;
-        const lineId = l.id ?? l.C_OrderLine_ID;
-        const qtyOrdered     = parseFloat(l.QtyOrdered ?? l.QtyEntered ?? 0);
-        const qtyInvoiced    = invoicedByLine.get(String(lineId)) || 0;
-        const qtyOutstanding = Math.max(qtyOrdered - qtyInvoiced, 0);
-        // Rasio konversi UOM per baris — dihitung dari QtyOrdered (base)
-        // vs QtyEntered (UOM yang dipilih user saat PO dibuat, mis. Kotak).
-        // Sudah tersedia dari API c_orderline di atas, TIDAK perlu fetch
-        // C_UOM_Conversion terpisah. Dipakai oleh POLineDetailSheet untuk
-        // menampilkan & menghitung qty dalam UOM entered (bukan base),
-        // supaya "Sisa X Kotak" dan QtyEntered yang dikirim ke invoice line
-        // konsisten satu sama lain (lihat POLineDetailSheet.jsx).
-        const qtyEnteredOriginal = parseFloat(l.QtyEntered ?? qtyOrdered ?? 0);
-        const multiplyRate = qtyEnteredOriginal > 0 ? (qtyOrdered / qtyEnteredOriginal) : 1;
-        if (!linesByOrder.has(oId)) linesByOrder.set(oId, []);
-        linesByOrder.get(oId).push({
-          C_OrderLine_ID: lineId,
-          M_Product_ID: fkId(l.M_Product_ID) ?? l.M_Product_ID?.id,
-          ProductName:  fkLabel(l.M_Product_ID) || `Produk #${fkId(l.M_Product_ID)}`,
-          C_UOM_ID:     fkId(l.C_UOM_ID) ?? l.C_UOM_ID?.id,
-          UomName:      fkLabel(l.C_UOM_ID) || '',
-          PriceEntered: parseFloat(l.PriceEntered ?? l.PriceActual ?? 0),
-          multiplyRate,
-          qtyOrdered, qtyInvoiced, qtyOutstanding,
-        });
-      });
+    console.debug('[usePOInvoiceLines] ringkasan', { tampil: items.length, ...totals, exhausted });
+    return { items, nextSkip: skip, exhausted };
+  }, []);
 
-      const merged = orders
-        .map(o => {
-          const oId = o.id ?? o.C_Order_ID;
-          const orderLines = linesByOrder.get(oId) || [];
-          const totalOutstanding = orderLines.reduce((s, l) => s + l.qtyOutstanding, 0);
-          const totalInvoiced    = orderLines.reduce((s, l) => s + l.qtyInvoiced, 0);
-          return {
-            C_Order_ID: oId,
-            DocumentNo: o.DocumentNo,
-            C_BPartner_ID: fkId(o.C_BPartner_ID) ?? o.C_BPartner_ID?.id,
-            VendorName: fkLabel(o.C_BPartner_ID) || '',
-            C_BPartner_Location_ID: fkId(o.C_BPartner_Location_ID) ?? o.C_BPartner_Location_ID?.id,
-            DateOrdered: o.DateOrdered,
-            GrandTotal: parseFloat(o.GrandTotal ?? 0),
-            lines: orderLines,
-            isFullyInvoiced: totalOutstanding < 0.01,
-            hasAnyInvoice: totalInvoiced > 0.01,   // ⬅️ baru — sudah exclude invoice VO/RE dari step 2
-          };
-        })
-        // Hanya tampilkan PO yang BELUM PERNAH dibuat invoice sama sekali —
-        // PO yang sudah punya invoice (baik partial maupun full) disembunyikan,
-        // bukan cuma di-gray-out. Invoice berstatus VO/RE tidak dihitung
-        // (sudah di-exclude di step invoiceLines di atas), jadi PO yang
-        // invoice-nya cuma pernah dibuat lalu di-void tetap dianggap "belum
-        // dibuat invoice" dan tetap muncul di sini.
-        .filter(po => !po.hasAnyInvoice);
-
-      setPos(merged);
+  const fetchPOs = useCallback(async (term = '') => {
+    const seq = ++seqRef.current;
+    setLoading(true);
+    setError(null);
+    try {
+      const { items, nextSkip, exhausted } = await loadBatch(term, 0);
+      if (seq !== seqRef.current) return;
+      termRef.current = term;
+      skipRef.current = nextSkip;
+      hasMoreRef.current = !exhausted;
+      setHasMore(!exhausted);
+      setPos(items);
     } catch (err) {
+      if (seq !== seqRef.current) return;
       console.error('[usePOInvoiceLines] gagal fetch PO:', err);
+      setError(err?.message || 'Gagal memuat PO');
+      hasMoreRef.current = false;
+      setHasMore(false);
       setPos([]);
     } finally {
-      setLoading(false);
+      if (seq === seqRef.current) setLoading(false);
     }
-  }, []);
+  }, [loadBatch]);
+
+  const fetchNextPage = useCallback(async () => {
+    if (busyMoreRef.current || !hasMoreRef.current) return;
+    busyMoreRef.current = true;
+    const seq = seqRef.current;
+    setLoadingMore(true);
+    try {
+      const { items, nextSkip, exhausted } = await loadBatch(termRef.current, skipRef.current);
+      if (seq !== seqRef.current) return;   // pencarian baru sudah jalan
+      skipRef.current = nextSkip;
+      hasMoreRef.current = !exhausted;
+      setHasMore(!exhausted);
+      setPos(prev => {
+        const seen = new Set(prev.map(p => String(p.C_Order_ID)));
+        return [...prev, ...items.filter(p => !seen.has(String(p.C_Order_ID)))];
+      });
+    } catch (err) {
+      console.error('[usePOInvoiceLines] gagal muat halaman berikutnya:', err);
+      setError(err?.message || 'Gagal memuat PO berikutnya');
+      hasMoreRef.current = false;
+      setHasMore(false);
+    } finally {
+      busyMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [loadBatch]);
 
   const search = useCallback((value) => setSearchValue(value), []);
 
-  return { pos, loading, fetchPOs, search, searchValue, setSearchValue };
+  return {
+    pos, loading, loadingMore, hasMore, error,
+    fetchPOs, fetchNextPage,
+    search, searchValue, setSearchValue,
+  };
 }

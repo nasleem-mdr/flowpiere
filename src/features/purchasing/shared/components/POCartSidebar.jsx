@@ -23,7 +23,7 @@ const POCartSidebar = ({
   onSubmitCash, 
   isSubmitting = false,
   emptyLabel = 'Belum ada produk dipilih.',
-  width = '380px',
+  width = '560px',
   description = '',
   onDescriptionChange,
   descriptionPlaceholder = 'Keterangan Purchase Order...',

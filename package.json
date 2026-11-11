@@ -56,5 +56,8 @@
     "serialize-javascript": "^6.0.2",
     "underscore": "^1.13.7",
     "uuid": "^9.0.1"
+  },
+  "allowScripts": {
+    "core-js@3.49.0": true
   }
 }

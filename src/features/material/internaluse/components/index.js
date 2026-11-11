@@ -4,3 +4,4 @@ export { default as InternalUseCartPanel } from './InternalUseCartPanel';
 export { default as InternalUseCartSidebar } from './InternalUseCartSidebar';
 export { default as InternalUseSuccessModal } from './InternalUseSuccessModal';
 export { default as InventoryPickerModal } from './InventoryPickerModal';
+export { default as RequisitionToInternalUseModal } from './RequisitionToInternalUseModal';

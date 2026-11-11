@@ -11,6 +11,8 @@ import {
   getMissingSessionFields,
   useInfiniteScroll 
 } from '@/shared/hooks';
+import { useAttachments } from '@/shared/hooks/useAttachments';
+import AttachmentModal from '@/shared/components/AttachmentModal';
 
 import { 
   POCard, 
@@ -56,6 +58,10 @@ const VendorInvoiceContainer = () => {
   const [paymentDocTypeId, setPaymentDocTypeId] = useState(null);
   const [selectedBankAccountId, setSelectedBankAccountId] = useState(null);
   const [dateInvoiced, setDateInvoiced] = useState(todayLocalISO);
+  const [pendingSuccessOpen, setPendingSuccessOpen] = useState(false);
+  const [attachOpen, setAttachOpen] = useState(false);
+  const att = useAttachments('c_invoice', null);   // Invoice baru: belum ada recordId, file di-stage dulu
+  const attachCount = att.staged.length + att.existing.length;
   
   const searchRef = useRef(null);
   const alert = (message, title = 'Perhatian') => setDialog({ isOpen: true, title, message });
@@ -121,24 +127,40 @@ const VendorInvoiceContainer = () => {
   const openPODetail  = useCallback((po) => { setSelectedPO(po); setDetailOpen(true); }, []);
   const closePODetail = useCallback(() => { setDetailOpen(false); setSelectedPO(null); }, []);
   const handleAddLines  = useCallback((chosenLines) => addItems(chosenLines), [addItems]);
-  const handleClearCart = useCallback(() => { clearCart(); setDescription(''); setDateInvoiced(todayLocalISO()); }, [clearCart]);
+  const handleClearCart = useCallback(() => { clearCart(); setDescription(''); setDateInvoiced(todayLocalISO()); att.clearStaged(); }, [clearCart, att]);
+
+  // Kalau ada lampiran yang gagal diunggah, tampilkan peringatan DULU dan tunda
+  // success modal sampai dialog ditutup (pola sama dgn PurchasingContainer).
+  const showResult = (results, attachmentWarning) => {
+    setSuccessData(results);
+    if (attachmentWarning) {
+      alert(attachmentWarning, 'Peringatan: Lampiran Gagal Diunggah');
+      setPendingSuccessOpen(true);
+    } else {
+      setSuccessOpen(true);
+    }
+  };
 
   const handleModalDraft = async () => {
     setSubmitModalOpen(false);
-    const { results, hadError } = await submitInvoice(cart, { description, poReference, dateInvoiced, submitMode: 'draft' });
+    const { results, hadError, attachmentWarning } = await submitInvoice(cart, {
+      description, poReference, dateInvoiced, submitMode: 'draft',
+      attachments: att.stagedFiles,   // File[] — diunggah ke tiap Invoice oleh hook
+    });
     if (!results) return;
-    setSuccessData(results);
-    setSuccessOpen(true);
-    if (!hadError) { clearCart(); setDescription(''); setDateInvoiced(todayLocalISO()); fetchPOs(searchValue); }
+    showResult(results, attachmentWarning);
+    if (!hadError) { clearCart(); att.clearStaged(); setDescription(''); setDateInvoiced(todayLocalISO()); fetchPOs(searchValue); }
   };
 
   const handleModalComplete = async () => {
     setSubmitModalOpen(false);
-    const { results, hadError } = await submitInvoice(cart, { description, poReference, dateInvoiced, submitMode: 'complete' });
+    const { results, hadError, attachmentWarning } = await submitInvoice(cart, {
+      description, poReference, dateInvoiced, submitMode: 'complete',
+      attachments: att.stagedFiles,   // File[] — diunggah ke tiap Invoice oleh hook
+    });
     if (!results) return;
-    setSuccessData(results);
-    setSuccessOpen(true);
-    if (!hadError) { clearCart(); setDescription(''); setDateInvoiced(todayLocalISO()); fetchPOs(searchValue); }
+    showResult(results, attachmentWarning);
+    if (!hadError) { clearCart(); att.clearStaged(); setDescription(''); setDateInvoiced(todayLocalISO()); fetchPOs(searchValue); }
   };
 
   // Complete invoice DULU, baru payment+allocation per vendor
@@ -157,9 +179,12 @@ const VendorInvoiceContainer = () => {
       return;
     }
     setSubmitModalOpen(false);
-    const { results, hadError } = await submitInvoice(cart, { description, poReference, dateInvoiced, submitMode: 'complete' });
+    const { results, hadError, attachmentWarning } = await submitInvoice(cart, {
+      description, poReference, dateInvoiced, submitMode: 'complete',
+      attachments: att.stagedFiles,   // File[] — diunggah ke tiap Invoice oleh hook
+    });
     if (!results) return;
-    if (hadError) { setSuccessData(results); setSuccessOpen(true); return; }
+    if (hadError) { showResult(results, attachmentWarning); return; }
 
     const paymentResults = [];
     for (const inv of results) {
@@ -170,9 +195,9 @@ const VendorInvoiceContainer = () => {
       if (pay) paymentResults.push({ ...inv, paymentDocNo: pay.documentNo });
     }
 
-    setSuccessData(paymentResults.length > 0 ? paymentResults : results);
-    setSuccessOpen(true);
+    showResult(paymentResults.length > 0 ? paymentResults : results, attachmentWarning);
     clearCart();
+    att.clearStaged();
     setDescription('');
     setSelectedBankAccountId(null);
     setDateInvoiced(todayLocalISO());
@@ -187,7 +212,17 @@ const VendorInvoiceContainer = () => {
 
   return (
     <div style={{ flex: 1, minHeight: 0, background: COLOR.bg, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-      <Dialog isOpen={dialog.isOpen} title={dialog.title} message={dialog.message} onClose={() => setDialog({ isOpen: false, title: '', message: '' })} />
+      <Dialog
+        isOpen={dialog.isOpen} title={dialog.title} message={dialog.message}
+        onClose={() => {
+          setDialog({ isOpen: false, title: '', message: '' });
+          // Success modal yang ditunda (ada lampiran gagal) ditampilkan setelah dialog ditutup.
+          if (pendingSuccessOpen) {
+            setPendingSuccessOpen(false);
+            setSuccessOpen(true);
+          }
+        }}
+      />
 
       <POLineDetailSheet isOpen={detailOpen} po={selectedPO} onClose={closePODetail} onConfirm={handleAddLines} />
 
@@ -200,6 +235,11 @@ const VendorInvoiceContainer = () => {
 
       <VendorInvoiceSuccessModal isOpen={successOpen} data={successData} onClose={() => { setSuccessOpen(false); setSuccessData(null); }} />
 
+      <AttachmentModal
+        isOpen={attachOpen} onClose={() => setAttachOpen(false)}
+        att={att} canEdit={canSubmitInvoice} title="📎 Lampiran Purchase Invoice"
+      />
+
       <div className='header-content'>
         <span style={{ 
           color: '#0f0101', 
@@ -211,6 +251,20 @@ const VendorInvoiceContainer = () => {
           gap: '6px' }}>
           <ShoppingCartIcon /><span>Purchase Invoice</span>
         </span>
+
+        <button
+          type="button"
+          onClick={() => setAttachOpen(true)}
+          title="Lampiran (gambar / PDF)"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '4px', height: '25px',
+            background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
+            borderRadius: '3px', padding: '3px 10px', fontSize: '11px', fontWeight: 600,
+            color: '#374151', cursor: 'pointer', whiteSpace: 'nowrap',
+          }}
+        >
+          📎 Lampiran{attachCount > 0 ? ` (${attachCount})` : ''}
+        </button>
 
         <input
           type="date"

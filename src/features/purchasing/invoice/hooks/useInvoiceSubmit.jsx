@@ -16,12 +16,38 @@
 *
 * PO sumber TIDAK disentuh sama sekali di sini — cuma dibaca lewat modal
 * import (lihat usePOInvoiceLines.jsx, dihitung sisa qty blm diinvoice).
+*
+* ── LAMPIRAN (attachments) — pola sama dgn usePurchaseOrderSubmit.jsx ───────
+* submit(cart, { ..., attachments: File[] }) mengunggah lampiran ke SETIAP
+* C_Invoice yang dibuat (1 Invoice per vendor -> file yang sama diunggah ke
+* tiap Invoice). Diunggah SEBELUM doc-action 'CO', supaya sudah ada saat
+* dokumen di-Complete. Kegagalan lampiran TIDAK menggagalkan Invoice —
+* dilaporkan lewat `results[i].attachmentFailures` ([{ name, error }]) dan
+* submit() juga mengembalikan:
+*   attachmentFailures — gabungan semua Invoice: [{ documentNo, vendorName, name, error }]
+*   attachmentWarning  — teks peringatan siap tampil (null kalau semua sukses)
+* `hadError` TIDAK ikut true karena lampiran: Invoice-nya sudah terbuat, jadi
+* caller tetap boleh mengosongkan cart (kalau tidak, user bisa submit ulang
+* dan membuat Invoice dobel). Tampilkan `attachmentWarning` lewat dialog.
 * ─────────────────────────────────────────────────────────────────────────────
 */
 import { useState, useCallback } from 'react';
-import { idempiereApi } from '@/api/idempiereApi';
+import { idempiereApi, uploadAttachments } from '@/api/idempiereApi';
 import { getLoginInfo } from '@/shared/hooks/useLoginInfo';
 import { todayLocalISO, isDateOnly } from '@/utils/dateOnly';
+
+// Unggah lampiran ke 1 C_Invoice. Tidak pernah melempar error: kegagalan
+// dikembalikan sbg [{ name, error }] supaya Invoice yang sudah terbuat tidak
+// ikut dianggap gagal (sama seperti uploadOrderAttachments di PO).
+async function uploadInvoiceAttachments(invoiceId, files) {
+  if (!files || files.length === 0) return [];
+  try {
+    const failures = await uploadAttachments('c_invoice', invoiceId, files);
+    return Array.isArray(failures) ? failures : [];
+  } catch (err) {
+    return files.map(f => ({ name: f.name, error: err?.message || 'Gagal mengunggah' }));
+  }
+}
 
 export function useInvoiceSubmit({ invoiceDocTypeId, defaultDescription, onError }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,7 +71,7 @@ export function useInvoiceSubmit({ invoiceDocTypeId, defaultDescription, onError
     return { docNo: draftRes.DocumentNo || `INV-${invoiceId}`, status: 'Draft', grandTotal: parseFloat(draftRes.GrandTotal ?? 0) };
   }, []);
 
-  const submit = useCallback(async (cart, { description, poReference, submitMode = 'complete', dateInvoiced = null } = {}) => {
+  const submit = useCallback(async (cart, { description, poReference, submitMode = 'complete', dateInvoiced = null, attachments = [] } = {}) => {
     if (cart.length === 0) {
       onError?.('Daftar tagihan masih kosong!');
       return { results: null, hadError: true };
@@ -79,6 +105,7 @@ export function useInvoiceSubmit({ invoiceDocTypeId, defaultDescription, onError
 
     setIsSubmitting(true);
     const results = [];
+    const attachmentFailures = [];   // [{ documentNo, vendorName, name, error }] — gabungan semua Invoice
 
     try {
       const groups = new Map();
@@ -153,6 +180,9 @@ export function useInvoiceSubmit({ invoiceDocTypeId, defaultDescription, onError
           });
         }
 
+        // Lampiran diunggah SEBELUM doc-action 'CO' di finalizeInvoice.
+        const invAttachFailures = await uploadInvoiceAttachments(invoiceId, attachments);
+
         const { docNo, status, grandTotal } = await finalizeInvoice(invoiceId, submitMode, vendorName);
 
         results.push({
@@ -160,10 +190,19 @@ export function useInvoiceSubmit({ invoiceDocTypeId, defaultDescription, onError
           vendorId, vendorName, vendorLocationId,
           date: new Date().toLocaleString('id-ID'),
           items,
+          attachmentFailures: invAttachFailures,
         });
+        invAttachFailures.forEach(f => attachmentFailures.push({ documentNo: docNo, vendorName, ...f }));
       }
 
-      return { results, hadError: false };
+      const attachmentWarning = attachmentFailures.length > 0
+        ? `Invoice berhasil diproses, tapi ${attachmentFailures.length} lampiran gagal diunggah:\n` +
+          attachmentFailures.map(f => `• ${f.documentNo} — ${f.name}: ${f.error}`).join('\n') +
+          `\n\nUnggah ulang lewat window Invoice (Vendor) di iDempiere. ` +
+          `Ini tidak mempengaruhi Invoice yang sudah berhasil dibuat.`
+        : null;
+
+      return { results, hadError: false, attachmentFailures, attachmentWarning };
     } catch (err) {
       onError?.(
         `Gagal memproses Invoice:\n\n${err.message}` +
