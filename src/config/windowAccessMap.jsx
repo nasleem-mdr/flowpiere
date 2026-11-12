@@ -36,7 +36,7 @@ export const WINDOW_ACCESS_MAP = {
   userManagement:       108,
   roleManagement:       111,
   bankTransfer:         195,
-  shipmentCustomer:     null,
+  shipmentCustomer:     169,
   // ===== List / Report =====
   salesOrderDetailReport:  143,
   requisitionList:         null, 
@@ -50,7 +50,7 @@ export const WINDOW_ACCESS_MAP = {
   outstandingInvoice:      null,
   dashboardMenu:           null,
   shipmentCustomerReport:  null,
-  inventoryReport:        null,
+  inventoryReport:         null,
   purchaseOrderDetail:     null,
   financialComparasion:    null,
   generalLedger:           null,
