@@ -21,9 +21,15 @@ Sistem terdiri dari tiga lapisan utama:
 
 1. **Frontend React:** Antarmuka pengguna (User Interface) untuk mengelola transaksi Procurement, Sales, dan Rekonsiliasi Kas/Bank. 
 
-2. **iDempiere REST/OData API:** Jembatan data dua arah untuk membaca dan memperbarui data operasional dan transaksi. 
-
-3. **Engine & Reporting Services:** 
+2. **iDempiere REST/OData API:** Jembatan data dua arah untuk membaca dan memperbarui data operasional dan transaksi.
+3. Ada beberapa modifikasi/custom column dan juga plugin yang perlu di install pada aplikasi standar idempiere.
+   Plugin :
+   - Workflow activities https://github.com/nasleem-mdr/org.nsoft.workflow.activities , plugin digunakan agar approver memperoleh data history dan analisis product
+   - Auto Price https://github.com/nasleem-mdr/org.nsoft.idempiere.autoprice, plugin ini digunakan untuk memfasilitasi perubahan harga pada pricelist berdasarkan harga PO terakhir
+   Custom Field:
+   - Kami menambahkan c_charge_id pada master product, ini dipakai sebagai default charge pada transaksi Internal Use, dan masih bisa diganti pada level transaksi.
+   - Jika anda menggunakan Instll Auto Price, anda harus setup pada level price version, centang isAutoPrice.
+5. **Engine & Reporting Services:** 
 
    - **Workflow Engine iDempiere:** Memproses persetujuan dokumen (approval chain). 
 
