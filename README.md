@@ -28,8 +28,9 @@ Sistem terdiri dari tiga lapisan utama:
    - Workflow activities https://github.com/nasleem-mdr/org.nsoft.workflow.activities , plugin digunakan agar approver memperoleh data history dan analisis product
    - Auto Price https://github.com/nasleem-mdr/org.nsoft.idempiere.autoprice, plugin ini digunakan untuk memfasilitasi perubahan harga pada pricelist berdasarkan harga PO terakhir
    Custom Field:
-   - Kami menambahkan c_charge_id pada master product (M_Product), ini dipakai sebagai default charge pada transaksi Internal Use, dan masih bisa diganti pada level transaksi.
+   - Tambahkan c_charge_id pada master product (M_Product), ini dipakai sebagai default charge pada transaksi Internal Use, dan masih bisa diganti pada level transaksi.
    - Tambahkan column RestictedFields pada table Role (AD_Role), digunakan untuk mengatur hak akses pada level field.
+   - Tambahkan column DashboardWidgets pada table Role (Ad_Role), digunakan untuk default dashboard yang akan pertama kali muncul saat login, dan diatur berdasarkan role akses.
    - Tambahkan column QtyEntered dan C_UOM_ID pada table M_Requisition agar process Request barang bisa menggunakan multiple UOM.
    - Jika anda menggunakan Instll Auto Price, anda harus setup pada level price version, centang isAutoPrice.
 5. **Engine & Reporting Services:** 

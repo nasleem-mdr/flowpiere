@@ -47,7 +47,6 @@ const DEFAULT_APP_WINDOWS = [
     "Sales Invoice and Credit/Debit Note",
     "Bank/Cash Statement",
     "Payment and Receipt",
-    "Sales Invoice",
 ];
 
 // Override PER INSTANCE tanpa mengubah kode — isi di .env / .env.production, mis.:

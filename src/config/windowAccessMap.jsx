@@ -35,7 +35,7 @@ export const WINDOW_ACCESS_MAP = {
   productImport:        140,
   userManagement:       108,
   roleManagement:       111,
-  bankTransfer:         null,
+  bankTransfer:         195,
   shipmentCustomer:     null,
   // ===== List / Report =====
   salesOrderDetailReport:  143,

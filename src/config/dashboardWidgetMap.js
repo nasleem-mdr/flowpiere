@@ -2,7 +2,7 @@ import { lazy } from 'react';
 
 export const dashboardWidgetMap = {
   generalLedger   :        { windowKey: 'generalLegder', component: lazy(() => import('@/features/reporting/financial/pages/GeneralLedgerReport')) },
-  procurementStats:        { windowKey: 'procurementTrace',   component: lazy(() => import('@/features/reporting/procurement/pages/ProcurementTraceReport')) },
+  procurementTrace:        { windowKey: 'procurementTrace',   component: lazy(() => import('@/features/reporting/procurement/pages/ProcurementTraceReport')) },
   trendReport     :        { windowKey: 'trendReport', component: lazy(() => import('@/features/reporting/financial/pages/MonthlyTrendReport')) },
   requisitionList:         { windowKey: 'requisitionList', component: lazy(() => import('@/features/requisition/pages/RequisitionList')) }, 
   posOrder:                { windowKey: 'posOrder', component: lazy(() => import('@/features/sales/order/pages/POSContainer')) }, 
