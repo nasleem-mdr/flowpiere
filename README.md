@@ -24,6 +24,7 @@ Sistem terdiri dari tiga lapisan utama:
 2. **iDempiere REST/OData API:** Jembatan data dua arah untuk membaca dan memperbarui data operasional dan transaksi.
 3. Ada beberapa modifikasi/custom column dan juga plugin yang perlu di install pada aplikasi standar idempiere.
    Plugin :
+   - Plugin REST API yang kami gunakan adalah https://github.com/bxservice/idempiere-rest, intall plugin ini agar bisa terhubung ke IDempiere
    - Workflow activities https://github.com/nasleem-mdr/org.nsoft.workflow.activities , plugin digunakan agar approver memperoleh data history dan analisis product
    - Auto Price https://github.com/nasleem-mdr/org.nsoft.idempiere.autoprice, plugin ini digunakan untuk memfasilitasi perubahan harga pada pricelist berdasarkan harga PO terakhir
    Custom Field:
