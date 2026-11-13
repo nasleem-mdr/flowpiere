@@ -1,31 +1,39 @@
+/** ─────────────────────────────────────────────────────────────────────────────
+* useGoodsReceiptSubmit.jsx (REVISI)
+* Perubahan dari versi sebelumnya (yang sumbernya masih Requisition):
+*   1. Setiap line yang berasal dari import PO (item.sourceOrderLineId) akan
+*      mengisi M_InOutLine.C_OrderLine_ID → ini yang membuat 3-way matching
+*      (PO vs Receipt vs Invoice) jalan otomatis di iDempiere, dan yang
+*      men-trigger update QtyDelivered di C_OrderLine saat dokumen di-Complete.
+*   2. Kalau SELURUH item di cart berasal dari PO yang sama (satu sesi
+*      penerimaan = satu PO, kasus paling umum), header M_InOut ikut diisi
+*      C_Order_ID. Kalau campuran (beberapa PO / ada item manual), header
+*      C_Order_ID dibiarkan kosong — relasi tetap tercatat per-line lewat
+*      C_OrderLine_ID, jadi tidak ada data yang hilang.
+*
+* submitMode ('draft' | 'complete', default 'complete') — SAMA pola dengan
+* useRequisitionSubmit.jsx / usePurchaseOrderSubmit.jsx:
+*   - 'complete' -> doc-action 'CO' dipanggil setelah lines tersimpan
+*                   (workflow jalan, QtyDelivered di C_OrderLine ter-update).
+*   - 'draft'    -> TIDAK ada doc-action yang dipanggil -> M_InOut tetap
+*                   Drafted. PENTING: karena 3-way matching (update
+*                   QtyDelivered) baru terjadi saat dokumen di-Complete,
+*                   draft di sini murni "simpan dulu" — belum ada efek apa
+*                   pun ke C_OrderLine terkait sampai nanti di-Complete.
+*
+* LAMPIRAN (attachments) — pola sama dgn useRequisitionSubmit / usePurchaseOrderSubmit:
+* submit(cart, { ..., attachments: File[] }) mengunggah lampiran ke M_InOut
+* SEBELUM doc-action 'CO', supaya sudah ada saat workflow berjalan. Kegagalan
+* lampiran TIDAK menggagalkan dokumen — dilaporkan lewat `attachmentFailures`
+* ([{ name, error }]) pada hasil submit.
+* ─────────────────────────────────────────────────────────────────────────────
+*/
+
 import { useState, useCallback } from 'react';
-import { idempiereApi, fkId } from '@/api/idempiereApi';
+import { idempiereApi, fkId, uploadAttachments } from '@/api/idempiereApi';
 import { getLoginInfo } from '@/shared/hooks/useLoginInfo';
 import { todayLocalISO } from '@/utils/dateOnly';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// useGoodsReceiptSubmit.jsx (REVISI)
-// Perubahan dari versi sebelumnya (yang sumbernya masih Requisition):
-//   1. Setiap line yang berasal dari import PO (item.sourceOrderLineId) akan
-//      mengisi M_InOutLine.C_OrderLine_ID → ini yang membuat 3-way matching
-//      (PO vs Receipt vs Invoice) jalan otomatis di iDempiere, dan yang
-//      men-trigger update QtyDelivered di C_OrderLine saat dokumen di-Complete.
-//   2. Kalau SELURUH item di cart berasal dari PO yang sama (satu sesi
-//      penerimaan = satu PO, kasus paling umum), header M_InOut ikut diisi
-//      C_Order_ID. Kalau campuran (beberapa PO / ada item manual), header
-//      C_Order_ID dibiarkan kosong — relasi tetap tercatat per-line lewat
-//      C_OrderLine_ID, jadi tidak ada data yang hilang.
-//
-// submitMode ('draft' | 'complete', default 'complete') — SAMA pola dengan
-// useRequisitionSubmit.jsx / usePurchaseOrderSubmit.jsx:
-//   - 'complete' -> doc-action 'CO' dipanggil setelah lines tersimpan
-//                   (workflow jalan, QtyDelivered di C_OrderLine ter-update).
-//   - 'draft'    -> TIDAK ada doc-action yang dipanggil -> M_InOut tetap
-//                   Drafted. PENTING: karena 3-way matching (update
-//                   QtyDelivered) baru terjadi saat dokumen di-Complete,
-//                   draft di sini murni "simpan dulu" — belum ada efek apa
-//                   pun ke C_OrderLine terkait sampai nanti di-Complete.
-// ─────────────────────────────────────────────────────────────────────────────
 const fmtQ = (n) => Number(Number(n).toFixed(2)).toLocaleString('id-ID');
 
 const overReceiptMessage = ({ name, lineNo, uomName, ordered, delivered, attempted }) =>
@@ -58,6 +66,19 @@ function explainOverReceiptError(message, cart) {
   });
 }
 
+// Unggah lampiran ke 1 M_InOut. Tidak pernah melempar error: kegagalan
+// dikembalikan sbg [{ name, error }] supaya dokumen yang sudah terbuat
+// tidak ikut dianggap gagal.
+async function uploadReceiptAttachments(inOutId, files) {
+  if (!files || files.length === 0) return [];
+  try {
+    const failures = await uploadAttachments('m_inout', inOutId, files);
+    return Array.isArray(failures) ? failures : [];
+  } catch (err) {
+    return files.map(f => ({ name: f.name, error: err?.message || 'Gagal mengunggah' }));
+  }
+}
+
 export function useGoodsReceiptSubmit({ docTypeId, description, onError }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -69,6 +90,7 @@ export function useGoodsReceiptSubmit({ docTypeId, description, onError }) {
       vendorName,
       movementDate,
       submitMode = 'complete',
+      attachments = [],
     } = {}) => {
     if (cart.length === 0) {
       onError?.('Daftar penerimaan masih kosong!');
@@ -109,6 +131,9 @@ export function useGoodsReceiptSubmit({ docTypeId, description, onError }) {
     }
     
     setIsSubmitting(true);
+    // Dideklarasikan di luar try supaya bisa dipakai di catch (info draft
+    // yang sudah tersimpan & pembersihan header kalau Complete gagal).
+    let inOutId = null;
     try {
       const effectiveDate = movementDate || todayLocalISO();
 
@@ -137,7 +162,7 @@ export function useGoodsReceiptSubmit({ docTypeId, description, onError }) {
         }),
       });
 
-      const inOutId = headerRes.id ?? headerRes.M_InOut_ID;
+      inOutId = headerRes.id ?? headerRes.M_InOut_ID;
       if (!inOutId) throw new Error('Gagal mendapatkan M_InOut_ID dari server.');
 
       // ── 2. Insert lines ───────────────────────────────────────────────────
@@ -166,6 +191,9 @@ export function useGoodsReceiptSubmit({ docTypeId, description, onError }) {
         });
       }
 
+      // ── 2b. Lampiran: diunggah SEBELUM doc-action 'CO' ──────────────────
+      const attachmentFailures = await uploadReceiptAttachments(inOutId, attachments);
+
       // ── 3. Complete / biarkan Draft ─────────────────────────────────────
       let docNo;
       let statusLabel;
@@ -193,6 +221,7 @@ export function useGoodsReceiptSubmit({ docTypeId, description, onError }) {
         date:        new Date().toLocaleString('id-ID'),
         vendorName:  vendorName || `#${vendorId}`,
         items:       [...cart],
+        attachmentFailures,   // [{ name, error }] — kosong kalau semua sukses
       };
     } catch (err) {
       const friendly = explainOverReceiptError(err.message, cart);

@@ -18,9 +18,8 @@ const pwResultStyle = (type) => ({
 });
 
 const UserFormModal = ({
-    modal, roles, rolesLoading, saving, error,
+    modal, roles, rolesLoading, saving, error, supervisorOptions,
     onChangeForm, onToggleRole, onSave, onClose,
-    // ── ganti password (hanya mode edit) ──
     pwForm, onChangePwForm, pwSaving, pwResult, onSavePassword,
 }) => {
     if (!modal) return null;
@@ -35,7 +34,13 @@ const UserFormModal = ({
                     {isCreate ? "➕ Buat User Baru" : `✏️ Edit User — ${modal.form.name}`}
                 </h3>
 
-                <UserFormFields form={modal.form} onChange={onChangeForm} isCreate={isCreate} />
+                <UserFormFields 
+                    form={modal.form} 
+                    onChange={onChangeForm} 
+                    isCreate={isCreate} 
+                    supervisorOptions={supervisorOptions}
+                    disabled={saving}
+                />
 
                 {!isCreate && (
                     <div style={pwBoxStyle}>

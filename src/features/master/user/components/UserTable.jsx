@@ -1,8 +1,7 @@
 // src/features/master/user/components/UserTable.jsx
 import React from "react";
 import styles from "./userStyles";
-
-const UserTable = ({ users, loading, roleNameById, togglingId, loadingEditId, deleting, onEdit, onToggleActive, onDelete }) => {
+const UserTable = ({ users, loading, roleNameById, userNameById, togglingId, loadingEditId, deleting, onEdit, onToggleActive, onDelete }) => {
     if (loading) return <p style={{ color: "#777" }}>Memuat...</p>;
     if (users.length === 0) return <p style={{ color: "#777" }}>Belum ada user aktif.</p>;
 
@@ -14,6 +13,7 @@ const UserTable = ({ users, loading, roleNameById, togglingId, loadingEditId, de
                         <th>Name</th>
                         <th>Username / Email</th>
                         <th>Role</th>
+                        <th>Supervisor</th>
                         <th style={{ width: "220px" }}>Aksi</th>
                     </tr>
                 </thead>
@@ -28,6 +28,11 @@ const UserTable = ({ users, loading, roleNameById, togglingId, loadingEditId, de
                                     : u.roleIds.map((rid) => (
                                         <span key={rid} style={styles.roleBadge}>{roleNameById.get(rid) || `Role #${rid}`}</span>
                                     ))}
+                            </td>
+                            <td>
+                                {u.supervisorId
+                                    ? (userNameById.get(u.supervisorId) || <span style={{ color: "#999" }}>User #{u.supervisorId}</span>)
+                                    : <span style={{ color: "#999" }}>—</span>}
                             </td>
                             <td>
                                 <div style={{ display: "flex", gap: "6px" }}>

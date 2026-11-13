@@ -8,10 +8,10 @@ export const listValue = (v) =>
 export const isTrue = (v) => v === true || v === "Y";
 
 export const USER_LEVEL_OPTIONS = [
-    { value: "CO", label: "Client (CO)" },
-    { value: "CL", label: "Client + Organization (CL)" },
-    { value: "OR", label: "Organization (OR)" },
-    { value: "SS", label: "System (SS)" },
+    { value: " CO", label: "Client (CO)" },
+    { value: " C ", label: "Client + Organization (CL)" },
+    { value: "  O", label: "Organization (OR)" },
+    { value: "S  ", label: "System (SS)" },
 ];
 
 export const EMPTY_FORM = {

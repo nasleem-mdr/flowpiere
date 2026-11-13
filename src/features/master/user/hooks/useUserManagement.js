@@ -13,9 +13,9 @@ import {
 } from "./userApi";
 
 const emptyModal = () => ({
-    mode: "create", id: null, form: { ...EMPTY_USER_FORM }, selectedRoleIds: [], records: [],
+    mode: "create", id: null, form: { ...EMPTY_USER_FORM },
+    selectedRoleIds: [], records: [], origSupervisorId: "",
 });
-
 const validateCreate = (f) => {
     const errors = [];
     if (!f.name.trim()) errors.push("Name wajib diisi");
@@ -92,8 +92,9 @@ export default function useUserManagement() {
         fetchUsers();
     }, [fetchRoles, fetchUsers]);
 
-    const roleNameById = useMemo(() => new Map(roles.map((r) => [r.id, r.name])), [roles]);
-
+    //const roleNameById = useMemo(() => new Map(roles.map((r) => [r.id, r.name])), [roles]);
+    const roleNameById = useMemo(() => new Map(roles.map((r) => [Number(r.id), r.name])), [roles]);
+    const userNameById = useMemo(() => new Map(users.map((u) => [Number(u.id), u.name])), [users]);
     // Cari di nama, username/email, dan nama role
     const filteredUsers = useMemo(() => {
         const q = search.trim().toLowerCase();
@@ -101,10 +102,22 @@ export default function useUserManagement() {
         return users.filter((u) =>
             u.name.toLowerCase().includes(q) ||
             u.email.toLowerCase().includes(q) ||
+            (userNameById.get(u.supervisorId) || "").toLowerCase().includes(q) ||
             u.roleIds.some((rid) => (roleNameById.get(rid) || "").toLowerCase().includes(q))
         );
-    }, [users, search, roleNameById]);
+    }, [users, search, roleNameById, userNameById]);
 
+    const supervisorOptions = useMemo(() => {
+        const selfId = modal?.id != null ? String(modal.id) : null;
+        const opts = users
+            .filter((u) => String(u.id) !== selfId)
+            .map((u) => ({ id: String(u.id), name: u.name }));
+        const cur = modal?.form?.supervisorId;
+        if (cur && cur !== selfId && !opts.some((o) => o.id === cur)) {
+            opts.push({ id: cur, name: `User #${cur} (nonaktif)` });
+        }
+        return opts;
+    }, [users, modal?.id, modal?.form?.supervisorId]);
     // ── Modal: buka / tutup / ubah ──────────────────────────────────────
     const openCreate = () => { setFormError(null); resetPw(); setModal(emptyModal()); };
 
@@ -112,6 +125,7 @@ export default function useUserManagement() {
         setLoadingEditId(user.id);
         try {
             const { user: u, records } = await fetchUserDetail(user.id);
+            const supId = u.Supervisor_ID ? String(fkId(u.Supervisor_ID) ?? "") : "";
             setFormError(null);
             resetPw();
             setModal({
@@ -123,9 +137,11 @@ export default function useUserManagement() {
                     email: u.EMail || "",
                     description: u.Description || "",
                     isActive: isTrue(u.IsActive),
+                    supervisorId: supId,          // ← nilai yang tampil di dropdown
                 },
                 selectedRoleIds: records.filter((r) => r.isActive).map((r) => r.roleId),
                 records,
+                origSupervisorId: supId,          // ← nilai asli, di level modal (bukan di form)
             });
         } catch (err) {
             setNotice({ type: "error", text: `Gagal memuat data user untuk edit: ${err.message}` });
@@ -148,7 +164,7 @@ export default function useUserManagement() {
 
     // ── SIMPAN (create & edit) ──────────────────────────────────────────
     const saveModal = async () => {
-        const { mode, id, form, selectedRoleIds, records } = modal;
+        const { mode, id, form, selectedRoleIds, records, origSupervisorId } = modal;
 
         if (mode === "create") {
             const errors = validateCreate(form);
@@ -169,9 +185,16 @@ export default function useUserManagement() {
                 IsActive: form.isActive,
             };
 
-            let userId = id;
+            const toFk = (v) => ({ id: parseInt(v, 10) });
             if (mode === "create") {
-                const created = await createUser({ ...base, Password: form.password }); // server yang hash
+                if (form.supervisorId) base.Supervisor_ID = toFk(form.supervisorId);
+            } else if (form.supervisorId !== (origSupervisorId || "")) {
+                base.Supervisor_ID = form.supervisorId ? toFk(form.supervisorId) : null;
+            }
+
+            let userId = id;   // ← baris yang hilang
+            if (mode === "create") {
+                const created = await createUser({ ...base, Password: form.password });
                 userId = fkId(created?.id) ?? created?.id ?? created?.AD_User_ID;
                 if (!userId) throw new Error("Server tidak mengembalikan AD_User_ID.");
             } else {
@@ -247,7 +270,7 @@ export default function useUserManagement() {
 
     return {
         // data
-        roles, rolesLoading, roleNameById, users, filteredUsers, usersLoading,
+        roles, rolesLoading, roleNameById, userNameById, users, filteredUsers, usersLoading, supervisorOptions,
         // pencarian
         search, setSearch,
         // modal

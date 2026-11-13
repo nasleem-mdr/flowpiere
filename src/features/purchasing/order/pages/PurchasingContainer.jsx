@@ -37,7 +37,8 @@ import {
 } from '@/features/purchasing/shared/components';
 import { 
   useCashPurchaseSubmit, 
-  usePurchaseOrderSubmit 
+  usePurchaseOrderSubmit,
+  usePurchaseDocTypes, 
 } from '@/features/purchasing/order/hooks';
 
 import { 
@@ -46,6 +47,8 @@ import {
   lineKey, 
   useProductVendorInfo 
 } from '@/shared/hooks';
+
+//import usePurchaseDocTypes from '@/features/purchasing/order/hooks/usePurchaseDocTypes';
 
 import { useAccess } from '@/context/AccessContext';
 import { COLOR, RADIUS } from '@/utils/styleTokens';
@@ -91,10 +94,16 @@ const PurchasingContainer = () => {
   const [pendingSuccessOpen, setPendingSuccessOpen] = useState(false);
   const [detailOpen, setDetailOpen]   = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [docTypeId, setDocTypeId] = useState(null);
   const [defaultLocatorId, setDefaultLocatorId] = useState(null);
   const [description, setDescription]         = useState('');
   const [poDocTypeId, setPoDocTypeId]           = useState(null);
+  // Document Type PO yang dipilih user (mis. per departemen → document sequence berbeda).
+  // poDocTypeId (hasil resolver) jadi default awal / fallback kalau daftar tidak termuat.
+  const {
+    docTypes: poDocTypes, loading: poDocTypesLoading,
+    selectedId: docTypeId, select: selectDocType,
+  } = usePurchaseDocTypes({ fallbackId: poDocTypeId });
+  const [editDocTypeName, setEditDocTypeName] = useState(null);   // tampilan saja saat mode edit
   const [cashPoDocTypeId, setCashPoDocTypeId] = useState(null); 
 
   const [receiptDocTypeId, setReceiptDocTypeId] = useState(null);
@@ -257,7 +266,6 @@ useEffect(() => {
             resolveDocTypeId(DOC_BASE_TYPE.AP_PAYMENT,       { orgId: info.orgId }),
           ]);
           setPoDocTypeId(poDt);
-          setDocTypeId(poDt);
           setReceiptDocTypeId(receiptDt);
           setInvoiceDocTypeId(invoiceDt);
           setPaymentDocTypeId(paymentDt);
@@ -423,6 +431,15 @@ useEffect(() => {
           } catch { /* fallback hari ini */ }
         }
         setDateOrdered(orderDate || todayLocalISO());
+        // Document Type PO yang diedit tidak bisa diganti — hanya ditampilkan.
+        let dtName = editOrder.C_DocTypeTarget_ID?.identifier || editOrder.C_DocType_ID?.identifier || null;
+        if (!dtName) {
+          try {
+            const o = await idempiereApi(`/models/c_order/${orderId}?$select=C_DocTypeTarget_ID`);
+            dtName = o?.C_DocTypeTarget_ID?.identifier ?? null;
+          } catch { /* label saja, abaikan */ }
+        }
+        setEditDocTypeName(dtName);
         setEditOrderId(orderId);
         setEditOrderDocNo(editOrder.DocumentNo || `#${orderId}`);
         setEditOrderStatus(editOrder.DocStatus?.id ?? editOrder.DocStatus ?? null);
@@ -459,6 +476,7 @@ useEffect(() => {
     setEditOrderId(null);
     setEditOrderDocNo(null);
     setEditOrderStatus(null);
+    setEditDocTypeName(null);
   }, [clearCart]);
 
   const openProductDetail = useCallback((product) => {
@@ -615,6 +633,10 @@ useEffect(() => {
   }, [cart, toBaseQty, updateUom]);
 
   const handleSubmit = async (submitMode = 'complete') => {
+    if (!editOrderId && !docTypeId) {
+      alert('Document Type Purchase Order belum dipilih / tidak ditemukan.\nPilih Document Type di bar atas, atau muat ulang halaman.', 'Document Type');
+      return;
+    }
     const { results, hadError } = await submit(cart, {
       warehouseId: warehouseInfo?.id,
       description,
@@ -632,6 +654,7 @@ useEffect(() => {
     setEditOrderId(null);
     setEditOrderDocNo(null);
     setEditOrderStatus(null);
+    setEditDocTypeName(null);
   
     setDateOrdered(todayLocalISO());
 
@@ -785,6 +808,61 @@ useEffect(() => {
               </option>
             ))}
           </select>
+        </div>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            background: 'rgba(255,255,255,0.18)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: '3px',
+            padding: '2px 8px 2px 10px',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '10px', fontWeight: 600, color: '#000',
+              textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap',
+            }}
+          >
+            Doc Type:
+          </span>
+          {editOrderId ? (
+            <select
+              disabled
+              value="edit"
+              title="Document Type mengikuti PO yang sedang diedit"
+              style={{
+                background: 'transparent', border: 'none', padding: '2px 4px', fontSize: '11px',
+                color: '#000f', cursor: 'default', outline: 'none',
+                maxWidth: isDesktop ? '200px' : '130px', colorScheme: 'dark',
+              }}
+            >
+              <option value="edit">{editDocTypeName || '—'}</option>
+            </select>
+          ) : (
+            <select
+              value={docTypeId ?? ''}
+              onChange={e => selectDocType(e.target.value)}
+              disabled={!canSubmitPO || poDocTypes.length <= 1}
+              title="Document Type Purchase Order (menentukan nomor dokumen / departemen)"
+              style={{
+                background: 'transparent', border: 'none', padding: '2px 4px', fontSize: '11px',
+                color: '#000f', cursor: (!canSubmitPO || poDocTypes.length <= 1) ? 'default' : 'pointer',
+                outline: 'none', maxWidth: isDesktop ? '200px' : '130px', colorScheme: 'dark',
+              }}
+            >
+              {poDocTypes.length === 0 && (
+                <option value={docTypeId ?? ''}>{poDocTypesLoading ? 'Memuat...' : '—'}</option>
+              )}
+              {poDocTypes.map(dt => (
+                <option key={dt.id} value={dt.id} style={{ background: '#1e3a5f', color: '#e0eaff' }}>
+                  {dt.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <div
           style={{

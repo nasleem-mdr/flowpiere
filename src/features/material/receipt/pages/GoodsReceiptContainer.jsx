@@ -22,6 +22,8 @@ import POReceiptCard from '@/features/material/receipt/components/POReceiptCard'
 import POReceiptDetailModal from '@/features/material/receipt/components/POReceiptDetailModal';
 import { useGoodsReceiptSubmit } from '@/features/material/receipt/hooks/useGoodsReceiptSubmit';
 import { usePOReceiptLines } from '@/features/material/receipt/hooks/usePOReceiptLines';
+import { useAttachments } from '@/shared/hooks/useAttachments';
+import AttachmentModal from '@/shared/components/AttachmentModal';
 
 import {
   Dialog,
@@ -81,6 +83,7 @@ const GoodsReceiptContainer = () => {
   const [detailOpen, setDetailOpen]   = useState(false);
   const [selectedPO, setSelectedPO]   = useState(null);
   const [movementDate, setMovementDate] = useState(todayLocalISO);
+  const [attachOpen, setAttachOpen]   = useState(false);
   const searchRef = useRef(null);
 
   const alert = (message, title = 'Perhatian') => setDialog({ isOpen: true, title, message });
@@ -99,6 +102,9 @@ const GoodsReceiptContainer = () => {
   });
   const { canEdit } = useAccess();
   const canSubmitReceipt = canEdit('goodsReceipt');
+  // Dokumen M_InOut selalu baru (tidak ada mode edit) → recordId null, hanya staged.
+  const att = useAttachments('m_inout', null);
+  const attachCount = att.staged.length + att.existing.length;
 
   const sentinelRef = useInfiniteScroll({
     fetchMore: fetchNextPage,
@@ -220,7 +226,8 @@ const GoodsReceiptContainer = () => {
   const handleResetVendor = useCallback(() => {
     setSelectedVendor(null);
     clearCart();
-  }, [clearCart]);
+    att.clearStaged();   // lampiran milik sesi penerimaan ini — ikut dikosongkan
+  }, [clearCart, att.clearStaged]);
 
   const handleSubmit = async (submitMode = 'complete') => {
     if (!docTypeId) {
@@ -243,15 +250,25 @@ const GoodsReceiptContainer = () => {
       vendorName:       selectedVendor.Name,
       movementDate,
       submitMode,
+      attachments: att.stagedFiles,   // File[] — diunggah sebelum doc-action 'CO'
     });
     if (result) {
       setSuccessData(result);
-      handleResetVendor();
+      handleResetVendor();   // juga mengosongkan lampiran staged
       setMovementDate(todayLocalISO());
       setCartOpen(false);
       setSuccessOpen(true);
       // Sisa PO berubah (Complete → QtyDelivered naik, Draft → reserved naik).
       fetchPOs(searchValue.trim());
+
+      if (result.attachmentFailures?.length) {
+        alert(
+          `Dokumen tersimpan, tetapi ${result.attachmentFailures.length} lampiran gagal diunggah:\n` +
+          result.attachmentFailures.map(f => `• ${f.name}: ${f.error}`).join('\n') +
+          '\n\nUnggah ulang lewat window Shipment (Receipt) di iDempiere.',
+          'Sebagian Lampiran Gagal'
+        );
+      }
     }
   };
 
@@ -297,6 +314,11 @@ const GoodsReceiptContainer = () => {
         onClose={() => setScannerOpen(false)}
       />
 
+      <AttachmentModal
+        isOpen={attachOpen} onClose={() => setAttachOpen(false)}
+        att={att} canEdit={canSubmitReceipt} title="📎 Lampiran Penerimaan Barang"
+      />
+
       {/* Top Bar */}
       <div className='header-content'>
         <span style={styles.headerTitle}>
@@ -331,6 +353,21 @@ const GoodsReceiptContainer = () => {
             <span style={styles.badgeLabel}>Warehouse:</span>
             <span style={styles.badgeContent}>🏭 {warehouseInfo?.name || '...'}</span>
           </div>
+
+          {/* Lampiran */}
+          <button
+            type="button"
+            onClick={() => setAttachOpen(true)}
+            title="Lampiran (gambar / PDF)"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '4px', height: '25px',
+              background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
+              borderRadius: '3px', padding: '3px 10px', fontSize: '11px', fontWeight: 600,
+              color: '#374151', cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            📎 Lampiran{attachCount > 0 ? ` (${attachCount})` : ''}
+          </button>
 
           {/* Movement Date Picker */}
           <div style={styles.badgeWrapper}>

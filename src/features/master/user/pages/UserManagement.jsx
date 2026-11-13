@@ -41,6 +41,7 @@ const UserManagement = () => {
                     users={um.filteredUsers}
                     loading={um.usersLoading}
                     roleNameById={um.roleNameById}
+                    userNameById={um.userNameById}
                     togglingId={um.togglingId}
                     loadingEditId={um.loadingEditId}
                     deleting={um.deleting}
@@ -54,6 +55,7 @@ const UserManagement = () => {
             <UserFormModal
                 modal={um.modal}
                 roles={um.roles}
+                supervisorOptions={um.supervisorOptions}
                 rolesLoading={um.rolesLoading}
                 saving={um.saving}
                 error={um.formError}

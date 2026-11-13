@@ -3,7 +3,7 @@
 import React from "react";
 import styles from "./userStyles";
 
-const UserFormFields = ({ form, onChange, isCreate }) => {
+const UserFormFields = ({ form, onChange, isCreate, supervisorOptions = [], disabled = false }) => {
     const set = (patch) => onChange({ ...form, ...patch });
     return (
         <div style={styles.formGrid}>
@@ -30,6 +30,20 @@ const UserFormFields = ({ form, onChange, isCreate }) => {
             <div style={{ ...styles.field, gridColumn: "1 / -1" }}>
                 <label style={styles.label}>Description</label>
                 <input style={styles.input} value={form.description} onChange={(e) => set({ description: e.target.value })} placeholder="Opsional — jabatan / keterangan" />
+            </div>
+            <div style={styles.field}>
+                <label style={styles.label}>Supervisor</label>
+                <select
+                    style={styles.input}
+                    value={form.supervisorId}
+                    disabled={disabled}
+                    onChange={(e) => onChange({ ...form, supervisorId: e.target.value })}
+                >
+                    <option value="">— Tanpa supervisor —</option>
+                    {supervisorOptions.map((o) => (
+                        <option key={o.id} value={o.id}>{o.name}</option>
+                    ))}
+                </select>
             </div>
             <div style={styles.field}>
                 <label style={{ ...styles.label, display: "flex", alignItems: "center", gap: "8px" }}>

@@ -6,17 +6,17 @@ import { fetchAllPages } from "./roleApi";
 
 // Role aktif (paging penuh — server membatasi ±100 record per halaman)
 export const fetchActiveRoles = async () => {
-    const rows = await fetchAllPages(`/models/ad_role?$filter=IsActive eq true&$select=Name&$orderby=Name`);
-    return rows.map((r) => ({
-        id: r.id ?? r.AD_Role_ID,
-        name: r.Name || `Role ${r.id}`,
-    }));
+    const rows = await fetchAllPages(`/models/ad_role?$filter=IsActive eq true&$orderby=Name`);
+    return rows.map((r) => {
+        const id = Number(r.id ?? r.AD_Role_ID);
+        return { id, name: r.Name || `Role ${id}` };
+    });
 };
 
 // Daftar user + role-nya (paging penuh)
 export const fetchUserList = async () => {
     const [userRows, urRows] = await Promise.all([
-        fetchAllPages(`/models/ad_user?$filter=IsActive eq true&$select=Name,EMail&$orderby=Name`),
+        fetchAllPages(`/models/ad_user?$filter=IsActive eq true&$select=Name,EMail,IsActive,Supervisor_ID&$orderby=Name`),
         fetchAllPages(`/models/ad_user_roles?$filter=IsActive eq true&$select=AD_User_ID,AD_Role_ID`),
     ]);
     const roleByUser = new Map();
@@ -27,12 +27,13 @@ export const fetchUserList = async () => {
         roleByUser.get(uid).push(rid);
     });
     return userRows.map((u) => {
-        const uid = u.id ?? u.AD_User_ID;
+        const uid = Number(u.id ?? u.AD_User_ID);
         return {
             id: uid,
             name: u.Name || "-",
             email: u.EMail || "-",
             isActive: isTrue(u.IsActive),
+            supervisorId: u.Supervisor_ID ? Number(fkId(u.Supervisor_ID)) : null,
             roleIds: roleByUser.get(uid) || [],
         };
     });
