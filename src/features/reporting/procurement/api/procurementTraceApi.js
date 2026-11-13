@@ -1,13 +1,10 @@
 // Layer data untuk Laporan Penelusuran Procurement (QC).
 // Semua panggilan REST lewat callGet() -> hanya SATU tempat yang perlu disesuaikan dengan idempiereApi Anda.
-import * as apiModule from "@/api/idempiereApi"; // ADAPT: sesuaikan path
+import { idempiereApi as client } from "@/api/idempiereApi";
 
 const PAGE = 100;     // bxservice hanya mengembalikan 100 baris per request
 const CHUNK = 40;     // jumlah "X eq id or ..." per request
 const PARALLEL = 3;   // chunk paralel
-
-// idempiereApi bisa berupa named export, default export, fungsi, atau objek.
-const client = apiModule.idempiereApi ?? apiModule.default ?? apiModule;
 
 const buildQuery = (params = {}) =>
   Object.entries(params)
