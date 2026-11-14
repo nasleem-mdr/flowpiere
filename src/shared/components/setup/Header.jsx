@@ -10,6 +10,8 @@ import { useUserAvatar } from '@/shared/hooks/useUserAvatar';
 import ChangeRoleModal from './ChangeRoleModal';
 import { useNavigate, Link } from "react-router-dom";
 import NotificationBell from './NotificationBell';
+import UserFormModal from '@/features/master/user/components/UserFormModal';
+import useMyProfile from '@/features/master/user/hooks/useMyProfile';
 import '@/css/Header.css';
  
 export default function Header({ session, onLogout, onSessionUpdate }) {
@@ -20,6 +22,10 @@ export default function Header({ session, onLogout, onSessionUpdate }) {
   const menuRef = useRef(null);
   const navigate = useNavigate();
   const avatarUrl = useUserAvatar();
+  const profile = useMyProfile({
+    session,
+    onAvatarChanged: () => window.dispatchEvent(new Event('avatar-changed')),
+  });
  
   // Deteksi apakah device mendukung hover asli (desktop/mouse) atau tidak
   // (mobile/touch). (hover: hover) + (pointer: fine) hanya true untuk mouse.
@@ -109,6 +115,9 @@ export default function Header({ session, onLogout, onSessionUpdate }) {
               <RoleIcon />
               <span className="header-info-value">{roleName}</span>
             </div>
+              <button onClick={() => { profile.open(); setMenuOpen(false); }}>
+                <UserIcon />Profil Saya
+              </button>
               <button onClick={() => { setShowChangeRole(true); setMenuOpen(false); }}>
                 <RoleIcon />Change Role
               </button>
@@ -131,6 +140,26 @@ export default function Header({ session, onLogout, onSessionUpdate }) {
           }}
         />
       )}
+      <UserFormModal
+        modal={profile.modal}
+        error={profile.loadError}
+        onClose={profile.close}
+        pwForm={profile.pwForm}
+        onChangePwForm={profile.setPwForm}
+        pwSaving={profile.pwSaving}
+        pwResult={profile.pwResult}
+        onSavePassword={profile.savePassword}
+        avatar={{
+          preview: profile.avatarPreview,
+          file: profile.avatarFile,
+          saving: profile.avatarSaving,
+          result: profile.avatarResult,
+          onPick: profile.pickAvatar,
+          onSave: profile.saveAvatar,
+          onCancel: profile.cancelAvatar,
+          currentUrl: avatarUrl,          // dari useUserAvatar yang sudah ada
+        }}
+      />
     </header>
   );
 }

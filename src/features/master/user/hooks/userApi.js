@@ -60,6 +60,63 @@ export const createUser = (body) => idempiereApi(`/models/ad_user`, { method: "P
 export const updateUser = (id, body) => idempiereApi(`/models/ad_user/${id}`, { method: "PUT", body: JSON.stringify(body) });
 export const deleteUser = (id) => idempiereApi(`/models/ad_user/${id}`, { method: "DELETE" });
 export const changeUserPassword = (id, password) => updateUser(id, { Password: password });
+// ── Avatar ──────────────────────────────────────────────────────────
+// ASUMSI: kolom avatar di AD_User = "Avatar_ID" (FK ke AD_Image). Samakan dengan
+// yang dibaca useUserAvatar. Jika berbeda, ubah konstanta ini saja.
+const AVATAR_COLUMN = "AD_Image_ID";
+
+// Perkecil gambar di client (maks 256px) → payload base64 kecil.
+const resizeToBase64 = (file, max = 256) =>
+    new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            const scale = Math.min(1, max / Math.max(img.width, img.height));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+            URL.revokeObjectURL(url);
+            resolve(canvas.toDataURL("image/png").split(",")[1]); // tanpa prefix data:
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("File bukan gambar yang valid")); };
+        img.src = url;
+    });
+
+// Cari AD_User_ID dari username login (fallback bila session tidak membawa userId)
+export const findUserIdByLogin = async (username) => {
+    const u = String(username).replace(/'/g, "''");
+    const rows = await fetchAllPages(
+        `/models/ad_user?$filter=(EMail eq '${u}' or Name eq '${u}') and IsActive eq true&$select=Name`
+    );
+    const r = rows[0];
+    return r ? Number(r.id ?? r.AD_User_ID) : null;
+};
+
+export const uploadUserAvatar = async (userId, file) => {
+    const base64 = await resizeToBase64(file);
+
+    // Cek apakah user sudah punya gambar → update, bukan buat baru
+    const user = await idempiereApi(`/models/ad_user/${userId}?$select=${AVATAR_COLUMN}`);
+    const existingId = user?.[AVATAR_COLUMN] ? Number(fkId(user[AVATAR_COLUMN])) : null;
+
+    if (existingId) {
+        await idempiereApi(`/models/ad_image/${existingId}`, {
+            method: "PUT",
+            body: JSON.stringify({ BinaryData: base64 }),
+        });
+        return existingId;
+    }
+
+    const img = await idempiereApi(`/models/ad_image`, {
+        method: "POST",
+        body: JSON.stringify({ Name: `avatar_user_${userId}`, BinaryData: base64 }),
+    });
+    const imageId = fkId(img?.id) ?? img?.id;
+    if (!imageId) throw new Error("Server tidak mengembalikan AD_Image_ID.");
+    await updateUser(userId, { [AVATAR_COLUMN]: { id: Number(imageId) } });
+    return Number(imageId);
+};
 
 const isDuplicateErr = (err) => /duplicate key|unique/i.test(err?.message || "");
 

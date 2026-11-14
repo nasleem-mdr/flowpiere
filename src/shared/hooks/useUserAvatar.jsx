@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { idempiereApi, fkId } from '@/api/idempiereApi';
 
 function base64ToBlob(b64) {
@@ -13,6 +13,7 @@ async function fetchImageUrl(path) {
   const token = localStorage.getItem('token');
   const res = await fetch(`/api/v1${path}`, {
     headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
   });
   const type = res.headers.get('content-type') || '';
   //console.log('[avatar] GET', path, '→', res.status, type);
@@ -47,18 +48,26 @@ async function fetchImageUrl(path) {
 
 export function useUserAvatar() {
   const [url, setUrl] = useState(null);
+  const [version, setVersion] = useState(0);
+  const currentRef = useRef(null); // object URL yang sedang tampil
+
+  // Muat ulang saat profil mengubah foto
+  useEffect(() => {
+    const handler = () => setVersion((v) => v + 1);
+    window.addEventListener('avatar-changed', handler);
+    return () => window.removeEventListener('avatar-changed', handler);
+  }, []);
 
   useEffect(() => {
     const userId = localStorage.getItem('AD_User_ID');
     if (!userId) return;
-    let objectUrl = null;
     let cancelled = false;
 
     (async () => {
+      let objectUrl = null;
       try {
         const user = await idempiereApi(`/models/ad_user/${userId}?$select=AD_Image_ID`);
         const imageId = fkId(user?.AD_Image_ID);
-        //console.log('[avatar] AD_Image_ID =', imageId);
 
         if (imageId) {
           const candidates = [
@@ -85,18 +94,24 @@ export function useUserAvatar() {
       } catch (e) {
         console.warn('[avatar] error', e.message);
       }
-      //console.log('[avatar] hasil akhir:', objectUrl);
+
       if (cancelled) {
         if (objectUrl) URL.revokeObjectURL(objectUrl);
-      } else {
-        setUrl(objectUrl);
+        return;
       }
+      // Ganti ke URL baru, baru revoke yang lama
+      const old = currentRef.current;
+      currentRef.current = objectUrl;
+      setUrl(objectUrl);
+      if (old) URL.revokeObjectURL(old);
     })();
 
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
+    return () => { cancelled = true; };
+  }, [version]);
+
+  // Revoke saat komponen benar-benar unmount
+  useEffect(() => () => {
+    if (currentRef.current) URL.revokeObjectURL(currentRef.current);
   }, []);
 
   return url;

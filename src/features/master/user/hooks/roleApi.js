@@ -100,7 +100,7 @@ const countByRole = (rows) => {
 
 export const fetchRoleList = async () => {
     const [roleRows, orgRows, winRows, formRows] = await Promise.all([
-        fetchAllPages(`/models/ad_role?$filter=IsActive eq true&$select=Name,UserLevel&$orderby=Name`),
+        fetchAllPages(`/models/ad_role?$filter=(IsActive eq true or IsActive eq false)&$select=Name,UserLevel,IsActive&$orderby=Name`),
         fetchAllPages(`/models/ad_role_orgaccess?$filter=IsActive eq true&$select=AD_Role_ID`),
         fetchAllPages(`/models/ad_window_access?$filter=IsActive eq true&$select=AD_Role_ID`),
         fetchAllPages(`/models/ad_form_access?$filter=IsActive eq true&$select=AD_Role_ID`),
