@@ -9,6 +9,7 @@ import { useOrgInfo } from "@/shared/hooks/useOrgInfo";
 import { idempiereApi } from "@/api/idempiereApi";
 import { renderListPDF } from "@/utils/pdf/renderListPDF";
 import { generateOrderPDF } from "@/features/purchasing/order/utils/generateOrderPDF";
+import { usePurchaseOrderExcel } from "@/features/purchasing/order/hooks/usePurchaseOrderExcel";
 import {
     STATUS_FILTERS, 
     StatusBadge, 
@@ -390,6 +391,24 @@ const PurchasingList = () => {
             setPrintingList(false);
         }
     };
+    const { exportExcel, exporting } = usePurchaseOrderExcel();
+
+    const handleExportExcel = async () => {
+        const loginUserId = localStorage.getItem("AD_User_ID");
+        if (showAllOption !== 'Y' && !loginUserId) return;
+        try {
+            const count = await exportExcel({
+                filterClause: buildFilterClause(loginUserId),
+                startDate,
+                endDate,
+            });
+            if (count === 0) alert('Tidak ada data untuk diexport pada periode ini.');
+        } catch (err) {
+            console.error('Gagal export Excel:', err.message);
+            alert('Gagal membuat file Excel: ' + err.message);
+        }
+    };
+
     const headerBtn = isMobile
     ? { ...styles.newBtn, ...uniformBtn("auto", 32), minWidth: 44, padding: "0 10px" }
     : { ...styles.newBtn, ...uniformBtn(HEADER_BTN_W, 32) };
@@ -413,6 +432,9 @@ const PurchasingList = () => {
                         />
                         <button onClick={handlePrintList} disabled={printingList} style={headerBtn}>
                             {printingList ? '⏳ ...' : '🖨️ Print'}
+                        </button>
+                        <button onClick={handleExportExcel} disabled={exporting} style={headerBtn}>
+                            {exporting ? '⏳ ...' : '📊 Excel'}
                         </button>
                         <button onClick={() => navigate("/purchasing")} style={headerBtn}>
                             + New

@@ -34,7 +34,13 @@ export function useRequisitionSubmit({ docTypeId, description: defaultDescriptio
     }
 
     const resolvedDescription = (description && description.trim()) ? description.trim() : defaultDescription;
-    const todayISO = new Date().toISOString().split('T')[0];
+    //const todayISO = new Date().toISOString().split('T')[0];
+    const toLocalISO = (d = new Date()) => {
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    };
+    
+    const todayISO = toLocalISO();
     const resolvedDateRequired = (dateRequired && dateRequired.trim()) ? dateRequired.trim() : todayISO;
 
     // Kalau ada contextOverride (dipanggil dari auto-sync), pakai nilai yang
@@ -146,6 +152,7 @@ export function useRequisitionSubmit({ docTypeId, description: defaultDescriptio
           body: JSON.stringify({
             M_Warehouse_ID: { id: resolvedWarehouseId },
             DateRequired:   resolvedDateRequired,
+            DateDoc:        resolvedDateRequired,
             Description:    resolvedDescription,
           }),
         });
@@ -183,6 +190,7 @@ export function useRequisitionSubmit({ docTypeId, description: defaultDescriptio
             M_Warehouse_ID: { id: resolvedWarehouseId },
             AD_User_ID:     { id: userId },
             DateRequired:   resolvedDateRequired,
+            DateDoc:        resolvedDateRequired,
             Description:    resolvedDescription,
             IsActive:       true,
           }),

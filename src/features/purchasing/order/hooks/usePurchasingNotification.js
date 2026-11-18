@@ -2,10 +2,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getModelRecords, fkId } from '@/api/idempiereApi';
 import { useAccess } from '@/context/AccessContext'; // TODO: sesuaikan path file AccessContext.jsx
+import { getLoginInfo } from '@/shared/hooks/useLoginInfo';
 
 const POLL_MS = 60000;
-const WINDOW_KEY = 'purchasing'; // TODO: samakan dengan key window Purchasing di config/windowAccessMap
+//const WINDOW_KEY = 'purchasing'; // TODO: samakan dengan key window Purchasing di config/windowAccessMap
+const NOTIFY_ROLE_NAMES = ['Purchasing'];
 const SEEN_KEY = 'purchasingNotif:notifiedIds';
+const normalize = (s) => String(s ?? '').trim().toLowerCase();
 
 const loadSeen = () => {
   try {
@@ -66,20 +69,54 @@ async function showBrowserNotification(title, body) {
   }
   new Notification(title, opts);
 }
+async function resolveRoleName() {
+  const { roleId } = getLoginInfo();
+  if (!roleId) return '';
 
+  try {
+    const c = JSON.parse(localStorage.getItem('RoleNameCache') || 'null');
+    if (c?.roleId === roleId && c.name) return c.name;
+  } catch { /* abaikan */ }
+
+  try {
+    const res = await getModelRecords('ad_role', {
+      $filter: `AD_Role_ID eq ${roleId}`,
+      $select: 'AD_Role_ID,Name',
+      $top: 1,
+    });
+    const rec = res?.records?.[0];
+    // pastikan record yang kembali memang role yang diminta
+    if (!rec || (rec.id ?? fkId(rec.AD_Role_ID)) !== roleId) return '';
+    localStorage.setItem('RoleNameCache', JSON.stringify({ roleId, name: rec.Name }));
+    return rec.Name;
+  } catch (err) {
+    console.error('usePurchasingNotification: gagal ambil nama role', err);
+    return '';
+  }
+}
 export default function usePurchasingNotification() {
-  const { canView } = useAccess();
-  // Semua role yang punya akses ke window Purchasing (termasuk atasan, QC, dll)
-  const enabled = canView(WINDOW_KEY);
-
+  const [roleName, setRoleName] = useState('');
   const [pending, setPending] = useState([]);
   const seenRef = useRef(loadSeen());
+  useEffect(() => {
+    if (roleName) return;
+    let cancelled = false;
+    resolveRoleName().then((n) => {
+      if (!cancelled) setRoleName(n);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [roleName]);
+
+  const enabled = NOTIFY_ROLE_NAMES.some((r) => normalize(r) === normalize(roleName));
 
   const refresh = useCallback(async () => {
+    if (!enabled) return;
     try {
       const list = await fetchPendingRequisitions();
       setPending(list);
-
+      if (!list.length) closeBrowserNotifications();
       const seen = seenRef.current;
       const fresh = list.filter((r) => !seen.has(r.id));
       if (fresh.length) {
@@ -94,13 +131,15 @@ export default function usePurchasingNotification() {
     } catch (err) {
       console.error('usePurchasingNotification:', err);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     if (!enabled) {
       setPending([]);
       return undefined;
     }
+    const onTrigger = () => refresh();
+    window.addEventListener(PURCHASING_REFRESH_EVENT, onTrigger);
     refresh();
     const timer = setInterval(refresh, POLL_MS);
     const onVisible = () => {
@@ -110,6 +149,7 @@ export default function usePurchasingNotification() {
     return () => {
       clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener(PURCHASING_REFRESH_EVENT, onTrigger);
     };
   }, [enabled, refresh]);
 
@@ -118,6 +158,20 @@ export default function usePurchasingNotification() {
       await Notification.requestPermission();
     }
   }, []);
+  
 
   return { enabled, count: pending.length, pending, refresh, requestPermission };
+}
+export const PURCHASING_REFRESH_EVENT = 'purchasing:refresh';
+export const triggerPurchasingRefresh = () =>
+  window.dispatchEvent(new Event(PURCHASING_REFRESH_EVENT));
+
+async function closeBrowserNotifications() {
+  try {
+    const reg = await navigator.serviceWorker?.ready;
+    const list = await reg?.getNotifications({ tag: 'purchasing-requisition' });
+    list?.forEach((n) => n.close());
+  } catch {
+    /* abaikan */
+  }
 }

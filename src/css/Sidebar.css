@@ -1,142 +1,166 @@
- @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
 
-/* Secara default (untuk layar mobile/kecil), panel kiri disembunyikan */
+/* =========================================================
+   WRAPPER
+   Wrapper SELALU tampil (di mobile ia memuat tombol FAB & panel
+   floating). Mode mobile diatur lewat class .is-mobile dari JSX,
+   dan breakpoint-nya harus sama dengan MOBILE_BREAKPOINT (768px).
+   ========================================================= */
 .side-panel-left {
+  display: block;
+}
+
+/* Elemen khusus mobile disembunyikan di desktop */
+.mobile-menu-fab,
+.sidebar-backdrop {
   display: none;
 }
 
-/* Ketika lebar layar mencapai 768px atau lebih (Tablet/Desktop), panel kiri ditampilkan */
-@media (min-width: 768px) {
-  .side-panel-left {
-    display: block; /* atau display: flex; sesuai kebutuhan layout */
-  }
+/* =========================================================
+   SIDEBAR (DESKTOP)
+   ========================================================= */
+.sidebar {
+  width: 210px;
+  height: 100vh;
+  background-color: #0F172A;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  top: 0;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  transition: width 0.3s ease;
+  z-index: 200;
 }
 
-.sidebar {
-    width: 250px;
-    background-color: #0F172A;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden; 
-    position: relative;
-    top: 0;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-    z-index: 200;
-  }
-  
-  .sidebar-brand {
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-  }
-  .sidebar-brand.collapsed {
-    width: 80px;
-    background-color: #0F172A;
-    border-radius: 0 20px 20px 0;
-    position: relative; /* atau 'absolute' jika ingin ikut tergulung saat scroll */
-    left: 0;
-    top: 5px; /* Sesuaikan dengan margin-top milik header Anda */
-    z-index: auto;
-  }
-  .brand-icon {
-    color: #00d1b2;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    font-weight: bold;
-    background-color: #0F172A;
-  }
-  .sidebar-info-value {
-    font-size: 13px;
-    font-weight: 600;
-    color: #ffffff;
-  }
-  .sidebar-info-value em {
-    font-size: 13px;
-    font-weight: 600;
-    color: #00d1b2;
-  }
-  .sidebar-nav {
-    padding: 15px 0;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    flex:1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    min-height: 0;
-    scrollbar-width: thin;                  /* thin | auto | none */
-    scrollbar-color: #00d1b2 transparent;   /* warna thumb, warna track */
-  }
-  /* opsional: styling scrollbar biar lebih rapi */
-  .sidebar-nav::-webkit-scrollbar {
-    width: 6px;
-  }
-  .sidebar-nav::-webkit-scrollbar-thumb {
-    background: #1f78e6;
-    border-radius: 3px;
-  }
-  .sidebar-nav::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 20px;
-    color: #bdc3c7;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    font-size: 0.95rem;
-  }
-  
-  .nav-item:hover {
-    background-color: rgba(255,255,255,0.05);
-    color: white;
-  }
-  
-  .nav-item.active {
-    background-color: #34495e;
-    color: #00d1b2;
-    border-left: 4px solid #00d1b2;
-    font-weight: 600;
-  }
-  
-  .nav-item svg {
-    transition: transform 0.3s ease;
-  }
-  
-  .nav-item:hover svg {
-    transform: translateX(3px);
-  }
-  /* Container untuk Hamburger dan Brand */
+.sidebar-brand {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-brand.collapsed {
+  width: 80px;
+  background-color: #0F172A;
+  border-radius: 0 20px 20px 0;
+  position: relative;
+  left: 0;
+  top: 5px;
+  z-index: auto;
+}
+
+.brand-icon {
+  color: #00d1b2;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-weight: bold;
+  background-color: #0F172A;
+}
+
+.sidebar-info-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.sidebar-info-value em {
+  font-size: 13px;
+  font-weight: 600;
+  color: #00d1b2;
+}
+
+.sidebar-nav {
+  padding: 15px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #00d1b2 transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: #1f78e6;
+  border-radius: 3px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nav-item {
+  position: relative; /* anchor untuk tooltip */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: #bdc3c7;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.nav-item.active {
+  background-color: #34495e;
+  color: #00d1b2;
+  border-left: 4px solid #00d1b2;
+  font-weight: 600;
+}
+
+.nav-item svg {
+  transition: transform 0.3s ease;
+}
+
+.nav-item:hover svg {
+  transform: translateX(3px);
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+}
+
+/* Header: hamburger + brand */
 .sidebar-header {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 6px;
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-  background-color: #0F172A ;
+  background-color: #0F172A;
   flex-shrink: 0;
 }
-.flow-text{
+
+.flow-text {
   color: #fff;
 }
-.piere-text{
-  color:#1f78e6;
+.piere-text {
+  color: #1f78e6;
 }
-/* Desain Tombol Hamburger */
+
 .hamburger-btn {
   background: none;
   border: none;
-  color: white; /* Sesuaikan dengan tema warna Anda */
+  color: white;
   font-size: 24px;
   cursor: pointer;
   padding: 4px 8px;
@@ -150,22 +174,64 @@
   opacity: 0.8;
 }
 
-/* Pengaturan Struktur Dasar Sidebar */
-.sidebar {
-  width: 210px;
-  height: 100vh;
-  transition: width 0.3s ease;
-  display: flex;
-  flex-direction: column;
+/* Divider & judul section */
+.sidebar-divider {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12); /* sebelumnya #e2e8f0: terlalu terang di bg gelap */
+  margin: 12px 16px;
 }
 
-/* Ketika Sidebar Mengecil */
+.sidebar-section-title {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 4px 16px;
+  margin-bottom: 4px;
+}
+
+.sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+/* sebelumnya #1e293b (hampir sama dengan background sidebar = teks hilang saat hover) */
+.sidebar-section-header:hover .sidebar-section-title {
+  color: #fff;
+}
+
+.section-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.section-chevron.closed {
+  transform: rotate(-90deg);
+}
+
+/* =========================================================
+   MODE COLLAPSED (ICON RAIL, DESKTOP SAJA)
+   ========================================================= */
 .sidebar.collapsed {
   width: 50px;
 }
 
 .sidebar.collapsed .sidebar-header {
-  flex-direction: column; /* Susun vertikal antara hamburger dan logo iD */
+  flex-direction: column;
   padding: 6px 0;
   gap: 8px;
 }
@@ -175,41 +241,11 @@
   padding: 12px 0;
 }
 
-/* Pastikan ukuran icon tetap konsisten */
-.nav-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 40px;
-}
-/* Gaya untuk garis pembatas */
-.sidebar-divider {
-  border: 0;
-  border-top: 1px solid #e2e8f0; /* warna garis samar */
-  margin: 12px 16px;
-}
-
-/* Gaya untuk teks judul kelompok menu */
-.sidebar-section-title {
-  display: block;
-  font-size: 11px;
-  text-transform: uppercase;
-  color: #94a3b8; /* warna teks abu-abu redup */
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 4px 16px;
-  margin-bottom: 4px;
-}
-
-/* Menghilangkan sedikit padding/margin jika sidebar dalam posisi collapsed */
 .sidebar.collapsed .sidebar-divider {
   margin: 12px 8px;
 }
-/* Tooltip untuk sidebar collapsed */
-.nav-item {
-  position: relative; /* wajib, jadi anchor untuk tooltip absolute */
-}
 
+/* Tooltip */
 .sidebar.collapsed .nav-item::after {
   content: attr(data-tooltip);
   position: absolute;
@@ -231,7 +267,6 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-/* Panah kecil penunjuk ke arah sidebar */
 .sidebar.collapsed .nav-item::before {
   content: '';
   position: absolute;
@@ -253,34 +288,105 @@
   visibility: visible;
   transform: translateY(-50%) translateX(0);
 }
-/* Header section yang bisa diklik untuk collapse/expand */
-.sidebar-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 4px 8px;
-  cursor: pointer;
-  color: inherit;
-  font: inherit;
+
+/* =========================================================
+   MOBILE (<= 768px): tombol FAB + panel floating
+   ========================================================= */
+@media (max-width: 768px) {
+  /* Wrapper tidak memakan ruang layout */
+  .side-panel-left.is-mobile {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    z-index: 1000;
+  }
+
+  /* Tombol floating pojok kiri atas */
+  .side-panel-left.is-mobile .mobile-menu-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top));
+    left: 12px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    background: #0F172A;
+    color: #fff;
+    font-size: 20px;
+    line-height: 1;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.35);
+    cursor: pointer;
+    z-index: 1001;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .side-panel-left.is-mobile .mobile-menu-fab:active {
+    transform: scale(0.95);
+  }
+
+  /* Backdrop gelap */
+  .side-panel-left.is-mobile .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    z-index: 1001;
+    animation: sidebar-fade-in 0.2s ease;
+  }
+
+  /* Panel floating (spesifisitas 2 class > .sidebar biasa) */
+  .sidebar.mobile {
+    position: fixed;
+    top: max(8px, env(safe-area-inset-top));
+    left: 8px;
+    width: 280px;
+    max-width: calc(100vw - 48px);
+    height: calc(100vh - 16px);   /* fallback */
+    height: calc(100dvh - 16px);
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.35);
+    transform: translateX(calc(-100% - 16px));
+    visibility: hidden;
+    transition: transform 0.25s ease, visibility 0s linear 0.25s;
+    z-index: 1002;
+    overflow: hidden;
+  }
+
+  .side-panel-left.mobile-open .sidebar.mobile {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.25s ease, visibility 0s;
+  }
+
+  .sidebar.mobile .sidebar-nav {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* Area sentuh lebih nyaman */
+  .sidebar.mobile .nav-item {
+    padding: 14px 20px;
+  }
+
+  .sidebar.mobile .sidebar-brand {
+    border-bottom: none;
+    padding: 12px 14px;
+  }
+
+  .sidebar.mobile .hamburger-btn {
+    margin-left: auto;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
-.sidebar-section-header:hover .sidebar-section-title {
-  color: #1e293b; /* sesuaikan dengan warna hover yang kamu pakai di tempat lain */
-}
-
-/* Chevron — rotasi 180° saat section tertutup */
-.section-chevron {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #94a3b8;
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
-}
-
-.section-chevron.closed {
-  transform: rotate(-90deg);
+@keyframes sidebar-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }

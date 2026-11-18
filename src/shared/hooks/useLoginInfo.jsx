@@ -4,6 +4,7 @@ export const getLoginInfo = () => ({
   orgId:       parseInt(localStorage.getItem('AD_Org_ID'))      || null,
   clientId:    parseInt(localStorage.getItem('AD_Client_ID'))   || null,
   roleId:      parseInt(localStorage.getItem('AD_Role_ID'))     || null,
+  roleName:    localStorage.getItem('RoleName') || '',
   userName:    localStorage.getItem('UserName') || localStorage.getItem('Name') || 'User',
 });
 

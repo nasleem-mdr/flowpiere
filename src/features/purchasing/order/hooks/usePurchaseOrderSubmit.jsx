@@ -63,6 +63,7 @@ import { idempiereApi, fkId, uploadAttachments } from '@/api/idempiereApi';
 import { getLoginInfo } from '@/shared/hooks';
 import { useUomConversion } from '@/shared/hooks/useUomConversion';
 import { resolveCurrencyIso } from '@/utils/currency'; 
+import { triggerPurchasingRefresh } from '@/features/purchasing/order/hooks/usePurchasingNotification';
 import { todayLocalISO, isDateOnly } from '@/utils/dateOnly';
 
 const AD_TABLE_C_ORDER = 259;
@@ -631,6 +632,6 @@ export function usePurchaseOrderSubmit({ docTypeId, defaultDescription, onError 
       setIsSubmitting(false);
     }
   }, [docTypeId, defaultDescription, onError, insertOrderLine, updateOrderLine, linkFpbIfNeeded, finalizeOrder, unmarkRequisitionLineOrdered]);
-
+  triggerPurchasingRefresh();
   return { submit, isSubmitting };
 }
