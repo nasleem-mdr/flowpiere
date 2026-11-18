@@ -62,6 +62,7 @@ export const WINDOW_ACCESS_MAP = {
   shipmentList:           null,
   salesImport:             167,
   cashierClosing:          194,
+  paymentVendorList:       null,
 };
 
 // Helper: ambil AD_Window_ID dari key, atau null kalau tidak terdaftar/tidak dibatasi.

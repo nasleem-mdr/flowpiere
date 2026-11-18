@@ -52,6 +52,7 @@ import BankTransferList  from '@/features/banking/transfer/pages/BankTransferLis
 //import PaymentReceiptContainer  from '@/features/banking/payment/pages/PaymentReceiptContainer'; form ini dipisah menjadi 2 
 import ReceiptCustomerContainer  from '@/features/banking/payment/pages/ReceiptCustomerContainer';
 import PaymentVendorContainer  from '@/features/banking/payment/pages/PaymentVendorContainer';
+import PaymentVendorList  from '@/features/banking/payment/pages/PaymentVendorList';
 
 import ProtectedRoute from '@/shared/components/ProtectedRoute';
 import IDempiereAuth from "@/features/login/pages/IDempiereAuth";
@@ -309,6 +310,11 @@ function AppContent() {
                       <Route path="/payment-vendor" element={
                         <ProtectedRoute windowKey="paymentVendor">
                           <PaymentVendorContainer />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/payment-vendor-list" element={
+                        <ProtectedRoute windowKey="paymentVendorList">
+                          <PaymentVendorList />
                         </ProtectedRoute>
                       } />
                       <Route path="/receipt-customer" element={

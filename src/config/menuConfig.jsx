@@ -53,6 +53,7 @@ export const menuSections = [
             { key: 'internalUse',   windowKey: 'internalUse',  path: '/internal-use',  label: 'Internal Use',  icon: <UserTake /> },
             { key: 'vendorInvoice',   windowKey: 'vendorInvoice',  path: '/vendor-invoice',  label: 'Purchase Invoice',  icon: <VendorIcon /> },
             { key: 'paymentVendor',   windowKey: 'paymentVendor',  path: '/payment-vendor',  label: 'Payment Vendor',  icon: <MdOutlinePayments size={24} /> },
+            { key: 'paymentVendorList',   windowKey: 'paymentVendorList',  path: '/payment-vendor-list',  label: 'Payment Vendor List',  icon: <MdOutlinePayments size={24} /> },
         ]
     },
     {
