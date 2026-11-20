@@ -17,7 +17,8 @@ import {
   useProductSearch, 
   useIsDesktop,
   useScannerInput,
-  sessionFieldLabel, 
+  sessionFieldLabel,
+  useProductCategories, 
 } from '@/shared/hooks'; 
 
 // 5. Shared Components
@@ -30,7 +31,8 @@ import {
   BarcodeScanner, 
   RequisitionIcon,
   ScanIcon, 
-  ProductGrid 
+  ProductGrid,
+  ProductCategoryBar, 
 } from '@/shared/components';
 
 // 6. Utils
@@ -94,9 +96,10 @@ const RequisitionContainer = () => {
   const {
     products, loading: productsLoading, loadingMore, hasMore,
     fetchProducts, loadMore, search, searchValue, setSearchValue,
-    searchByUPC,
+    searchByUPC, categoryId, setCategoryId,
   } = useProductSearch();
 
+  const { categories, loading: categoriesLoading } = useProductCategories();
   const { cart, addToCart, removeFromCart, updateQty, updateUom, updateDescription, clearCart, setCart, totalQty, totalItems } = useCart();
   // Options di-memo — sebelumnya object literal baru dibuat tiap render,
   // jadi kalau useRequisitionSubmit punya effect internal yang depend ke
@@ -692,7 +695,13 @@ useEffect(() => {
             <ScanIcon />
             </button>
           </div>
-
+          <ProductCategoryBar
+            categories={categories}
+            loading={categoriesLoading}
+            selectedId={categoryId}
+            searching={!!searchValue}
+            onSelect={(id) => setCategoryId(id, selectedWarehouse?.id ?? null)}
+          />
           {/* Product Grid */}
           <div style={{
             flex: 1, overflowY: 'auto', padding: '12px 14px',
@@ -707,6 +716,9 @@ useEffect(() => {
               onProductClick={openProductDetail}
               isDesktop={isDesktop}
               selectedWarehouse={selectedWarehouse}
+              emptyHint={categoryId && !searchValue
+                ? 'Tidak ada produk pada kategori ini. Pilih "Semua" atau kategori lain.'
+                : undefined}
             />
 
           </div>

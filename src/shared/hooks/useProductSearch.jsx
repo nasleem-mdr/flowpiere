@@ -9,12 +9,15 @@ export function useProductSearch({ debounceMs = 420 } = {}) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore]         = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [categoryId, setCategoryIdState] = useState(null); // filter M_Product_Category (null = semua)
   const debounceRef = useRef(null);
 
   // Menyimpan parameter pencarian terakhir + state pagination internal
-  const lastParamsRef  = useRef({ query: '', warehouseId: null });
+  const lastParamsRef  = useRef({ query: '', warehouseId: null, categoryId: null });
   const skipRef        = useRef(0);     // server-side skip, dipakai di semua mode sekarang
   const locatorIdsRef  = useRef(null);  // cache locator IDs utk warehouse terpilih (HANYA utk scoping QtyOnHand, bukan filter produk)
+  const categoryIdRef  = useRef(null);  // kategori terpilih (dibaca saat fetch, tanpa mengubah dependency callback)
+  const reqIdRef       = useRef(0);     // penanda "generasi" daftar: hasil request lama dibuang bila daftar sudah diganti
 
   useEffect(() => {
     return () => clearTimeout(debounceRef.current);
@@ -169,11 +172,15 @@ export function useProductSearch({ debounceMs = 420 } = {}) {
   //    difilter berdasarkan warehouse/locator. locatorIds cuma diteruskan
   //    ke enrichAndSort supaya QtyOnHand yang tampil relevan dgn gudang
   //    terpilih (kalau ada) — murni kosmetik, bukan syarat kemunculan. ────────
-  const fetchProductsPage = useCallback(async (query, skip, locatorIds) => {
+  const fetchProductsPage = useCallback(async (query, skip, locatorIds, categoryId = null) => {
     const safeQ = query.toUpperCase().replace(/'/g, "''");
     let productFilter = 'IsPurchased eq true and IsActive eq true';
     if (query) {
       productFilter += ` and (contains(toupper(Name),'${safeQ}') or contains(toupper(Value),'${safeQ}') or contains(toupper(UPC),'${safeQ}') or contains(toupper(Description),'${safeQ}'))`;
+    } else if (categoryId) {
+      // Filter kategori HANYA untuk mode browse (tanpa kata kunci). Search & scan selalu
+      // menjangkau SEMUA kategori — makanya cabang ini tidak dijalankan saat query terisi.
+      productFilter += ` and M_Product_Category_ID eq ${Number(categoryId)}`;
     }
 
     const productData = await idempiereApi(
@@ -196,13 +203,13 @@ export function useProductSearch({ debounceMs = 420 } = {}) {
   //    batas MAX_SCAN_ROUNDS tercapai (jaga-jaga jangan scan tanpa henti
   //    kalau memang mayoritas katalog belum ada vendor-nya).
   const MAX_SCAN_ROUNDS = 10; // maksimal 10 x PAGE_SIZE = 200 produk mentah di-scan per aksi
-  const fetchFilledPage = useCallback(async (query, startSkip, locatorIds) => {
+  const fetchFilledPage = useCallback(async (query, startSkip, locatorIds, categoryId = null) => {
     let skip = startSkip;
     let collected = [];
     let serverExhausted = false;
 
     for (let round = 0; round < MAX_SCAN_ROUNDS; round++) {
-      const { page, rawCount } = await fetchProductsPage(query, skip, locatorIds);
+      const { page, rawCount } = await fetchProductsPage(query, skip, locatorIds, categoryId);
       skip += rawCount;
       collected = collected.concat(page);
 
@@ -218,38 +225,49 @@ export function useProductSearch({ debounceMs = 420 } = {}) {
   }, [fetchProductsPage]);
 
   // ── fetchProducts: reset ke halaman pertama ─────────────────────────────────
+  // Kategori (categoryIdRef) ikut dipakai hanya bila `query` kosong (lihat fetchProductsPage).
+  // reqIdRef: kalau fetch baru dimulai sebelum yang lama selesai (ganti kategori/gudang/kata kunci
+  // dengan cepat), hasil yang lama dibuang supaya tidak menimpa daftar yang lebih baru.
   const fetchProducts = useCallback(async (query = '', warehouseId = null) => {
-    lastParamsRef.current = { query, warehouseId };
+    const categoryId = categoryIdRef.current;
+    lastParamsRef.current = { query, warehouseId, categoryId };
+    const reqId = ++reqIdRef.current;
     setLoading(true);
     try {
       // locatorIds cuma dipakai utk scoping QtyOnHand tampilan, sekali per
       // fetchProducts (bukan per fetchWarehousePool lama) — di-cache di ref
       // supaya loadMore tidak perlu fetch m_locator berulang tiap halaman.
-      locatorIdsRef.current = warehouseId ? await fetchWarehouseLocatorIds(warehouseId) : null;
+      const locatorIds = warehouseId ? await fetchWarehouseLocatorIds(warehouseId) : null;
+      if (reqId !== reqIdRef.current) return true; // sudah digantikan fetch yang lebih baru
+      locatorIdsRef.current = locatorIds;
 
       skipRef.current = 0;
-      const { items, nextSkip, serverExhausted } = await fetchFilledPage(query, 0, locatorIdsRef.current);
+      const { items, nextSkip, serverExhausted } = await fetchFilledPage(query, 0, locatorIds, categoryId);
+      if (reqId !== reqIdRef.current) return true;
       skipRef.current = nextSkip;
       setProducts(items);
       setHasMore(!serverExhausted);
       return true;
     } catch (err) {
+      if (reqId !== reqIdRef.current) return true;
       console.error('[useProductSearch] fetchProducts error:', err);
       setProducts([]);
       setHasMore(false);
       return false;
     } finally {
-      setLoading(false);
+      if (reqId === reqIdRef.current) setLoading(false);
     }
   }, [fetchWarehouseLocatorIds, fetchFilledPage]);
 
   // ── loadMore: dipanggil sentinel infinite scroll ────────────────────────────
   const loadMore = useCallback(async () => {
-    const { query } = lastParamsRef.current;
+    const { query, categoryId } = lastParamsRef.current;
+    const reqId = reqIdRef.current; // halaman ini milik daftar yang sedang tampil
 
     setLoadingMore(true);
     try {
-      const { items, nextSkip, serverExhausted } = await fetchFilledPage(query, skipRef.current, locatorIdsRef.current);
+      const { items, nextSkip, serverExhausted } = await fetchFilledPage(query, skipRef.current, locatorIdsRef.current, categoryId);
+      if (reqId !== reqIdRef.current) return; // daftar sudah diganti saat menunggu → buang, jangan digabung
       skipRef.current = nextSkip;
       setProducts(prev => [...prev, ...items]);
       setHasMore(!serverExhausted);
@@ -267,8 +285,19 @@ export function useProductSearch({ debounceMs = 420 } = {}) {
       setLoading(true);
       const safeUPC = upc.trim().replace(/'/g, "''");
 
-      const productData = await idempiereApi(`/models/m_product?$select=M_Product_ID,Name,Value,UPC,C_UOM_ID,Description&$filter=IsPurchased eq true and IsActive eq true and UPC eq '${safeUPC}'&$top=1`);
-      const rawProducts = Array.isArray(productData.records) ? productData.records : [];
+      const findOne = async (extraFilter) => {
+        const res = await idempiereApi(
+          `/models/m_product?$select=M_Product_ID,Name,Value,UPC,C_UOM_ID,Description` +
+          `&$filter=IsPurchased eq true and IsActive eq true and ${extraFilter}&$top=1`
+        );
+        return Array.isArray(res.records) ? res.records : [];
+      };
+
+      // 1) UPC persis, 2) kode produk (Value) persis tanpa peduli huruf besar/kecil.
+      // Keduanya query langsung ke server, jadi hasil scan tidak bergantung pada kategori
+      // yang sedang dipilih maupun produk yang kebetulan sudah termuat di grid.
+      let rawProducts = await findOne(`UPC eq '${safeUPC}'`);
+      if (rawProducts.length === 0) rawProducts = await findOne(`toupper(Value) eq '${safeUPC.toUpperCase()}'`);
       if (rawProducts.length === 0) return null;
 
       const targetProductId = fkId(rawProducts[0].M_Product_ID) ?? rawProducts[0].id;
@@ -303,9 +332,21 @@ export function useProductSearch({ debounceMs = 420 } = {}) {
     return fetchProducts(query, warehouseId);
   }, [fetchProducts]);
 
+  // Pilih kategori (null = semua) lalu muat ulang daftar dalam mode browse.
+  // Dipanggil dari chip kategori, yang dinonaktifkan selama ada kata kunci → tidak mengganggu search/scan.
+  const setCategoryId = useCallback((id, warehouseId = null) => {
+    const next = id ?? null;
+    categoryIdRef.current = next;
+    setCategoryIdState(next);
+    clearTimeout(debounceRef.current); // batalkan search yang masih terjadwal
+    setSearchValue('');
+    return fetchProducts('', warehouseId);
+  }, [fetchProducts]);
+
   return {
     products, loading, loadingMore, hasMore,
     searchValue, setSearchValue,
+    categoryId, setCategoryId,
     fetchProducts,
     loadMore,
     search,

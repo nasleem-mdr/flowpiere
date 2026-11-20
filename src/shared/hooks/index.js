@@ -10,6 +10,7 @@ export * from './useLoginInfo';
 export * from './usePOCart';
 export * from './usePOInvoiceLines';
 export * from './useProductSearch';
+export * from './useProductCategories';
 export * from './useProductStock';
 export * from './useProductVendorInfo';
 export * from './usePurchasingStats';
