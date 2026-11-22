@@ -6,6 +6,7 @@ import {
   PurchasingContainer, 
   PurchasingList, 
   PurchasingView,
+  PurchasingCashContainer,
 } from "@/features/purchasing/order/pages";
 
 import PurchaseOrderDetailReport from "@/features/purchasing/report/pages/PurchaseOrderDetailReport";
@@ -223,6 +224,11 @@ function AppContent() {
                       <Route path="/purchasing" element={
                         <ProtectedRoute windowKey="purchasing">
                           <PurchasingContainer />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/purchasing-cash" element={
+                        <ProtectedRoute windowKey="purchasingCash">
+                          <PurchasingCashContainer />
                         </ProtectedRoute>
                       } />
                       <Route path="/goods-receipt" element={

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from 'react-router-dom';
 
 import { 
@@ -25,6 +25,7 @@ import '@/css/Login.css';
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function IDempiereAuth({ onLoginSuccess }) {
   const [step, setStep] = useState(1);
+  const bgVideoRef = useRef(null);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -197,6 +198,17 @@ export default function IDempiereAuth({ onLoginSuccess }) {
         acctSchemaId: data.acctSchemaId,   // ← baris baru
         language,
       });
+      // onLoginSuccess({
+      //   token: data.token,
+      //   username: form1.username,
+      //   clientId: parseInt(selectedClientId, 10),
+      //   clientName: clients.find((c) => String(c.id) === selectedClientId)?.name || selectedClientId,
+      //   roleId: parseInt(selectedRoleId, 10),
+      //   roleName: roles.find((r) => String(r.id) === selectedRoleId)?.name || selectedRoleId,
+      //   orgId: parseInt(selectedOrgId, 10),
+      //   orgName: orgs.find((o) => String(o.id) === selectedOrgId)?.name || selectedOrgId,
+      //   language,
+      // });
       navigate('/dashboard');
     } catch (err) {
       setError(err.message);
@@ -227,6 +239,17 @@ export default function IDempiereAuth({ onLoginSuccess }) {
     { num: 3, label: "Success", desc: "Active session & ready to use" },
   ];
 
+  // React tidak merender atribut `muted` ke DOM, sehingga autoplay bisa diblokir browser.
+  // Set muted lewat property lalu panggil play() manual.
+  useEffect(() => {
+    const v = bgVideoRef.current;
+    if (!v) return;
+    v.muted = true;
+    v.defaultMuted = true;
+    const p = v.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }, []);
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="auth-root">
@@ -236,13 +259,10 @@ export default function IDempiereAuth({ onLoginSuccess }) {
           <div className="left-content">
             {/* Brand / Logo */}
             <div className="brand">
-              <div className="logo-container"><LogoIconW size={50} /></div>
+              <div className="logo-container"><LogoIconW size={40} /></div>
               <div className="brand-text">
-                <div className="brand-name">
-                  <em className="flow-text">Flow</em>
-                  <em className="piere-text">Piere</em>
-                </div>
-                <div className="brand-sub">IDemepiere Lite</div>
+                <div className="brand-name">Procure<em>Grid</em></div>
+                <div className="brand-sub">Part of IDempiere</div>
               </div>
               <button className="hamburger-btn" onClick={() => setLeftOpen(!leftOpen)}>
                 {leftOpen ? '☰' : '☰'}
@@ -280,18 +300,32 @@ export default function IDempiereAuth({ onLoginSuccess }) {
       </div>
       {/* RIGHT PANEL */}
       <div className="auth-right">
+        {/* Background video */}
+        <video
+          className="auth-bg-video"
+          ref={bgVideoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster={`${import.meta.env.BASE_URL}login-poster.jpg`}
+          aria-hidden="true"
+        >
+          <source src={`${import.meta.env.BASE_URL}login-bg.webm`} type="video/webm" />
+          <source src={`${import.meta.env.BASE_URL}login-bg.mp4`} type="video/mp4" />
+        </video>
+        <div className="auth-bg-overlay" />
+
 
         {/* ── Step 1 ── */}
         {step === 1 && (
           <div className="card slide-enter">
             <div className="brand">
-              <div><LogoIconW size={60}/></div>
+              <div><LogoIconW size={40}/></div>
               <div>
-                <div className="brand-name">
-                  <em className="flow-text">Flow</em>
-                  <em className="piere-text">Piere</em>
-                </div>
-                <div className="brand-sub">IDemepiere Lite</div>
+                <div className="brand-name">Procure<em>Grid</em></div>
+                <div className="brand-sub">Procurement Application</div>
               </div>
             </div>
             <div className="card-sub"><em>Enter your username and passwoer to continue.</em></div>
