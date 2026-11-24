@@ -4,7 +4,7 @@
 * tombol untuk mengedit dan mengunduh file dalam format pdf.
 * ─────────────────────────────────────────────────────────────────────────
 */
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, Link } from "react-router-dom";
 
 import { BoxIcon } from "@/shared/components/icon";
@@ -14,6 +14,9 @@ import { idempiereApi, getFirstProductImageBlobUrl } from '@/api/idempiereApi';
 import { useOrgInfo } from '@/shared/hooks/useOrgInfo';
 import { generateProductPDF } from '../utils/generateProductPDF';
 import '@/App.css';
+
+// Kolom yang boleh diurutkan. Nilai ?sort= di URL masuk ke $orderby, jadi WAJIB di-whitelist.
+const SORTABLE_FIELDS = ['Value', 'Name'];
 
 const thumbBoxStyle = {
   width: 44, height: 44, borderRadius: 6, overflow: 'hidden',
@@ -37,6 +40,11 @@ function ProductList() {
   const selectedCategories = catParam ? catParam.split(",").filter(Boolean) : [];
   const selectedCategoriesKey = selectedCategories.slice().sort().join(",");
 
+  // ─── Pengurutan (Search Key / Product Name) juga disimpan di URL: ?sort=Name&dir=desc
+  const sortParam = searchParams.get("sort") || "";
+  const sortKey = SORTABLE_FIELDS.includes(sortParam) ? sortParam : "";   // "" = urutan bawaan server
+  const sortDir = searchParams.get("dir") === "desc" ? "desc" : "asc";
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);   // loading nambah data
@@ -54,6 +62,12 @@ function ProductList() {
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const categoryDropdownRef = useRef(null);
+
+  // id kategori → nama, dipakai kolom Category di tabel (daftar ini sudah dimuat untuk dropdown filter)
+  const categoryNameById = useMemo(
+    () => new Map(categoryOptions.map((c) => [Number(c.id ?? c.M_Product_Category_ID), c.Name])),
+    [categoryOptions]
+  );
 
   // Fetch daftar kategori sekali saat mount
   useEffect(() => {
@@ -123,10 +137,48 @@ function ProductList() {
     };
   }, []);
 
+  // Klik pertama = A→Z (asc), klik berikutnya pada kolom yang sama membalik asc ⇄ desc.
+  // Ganti kolom → mulai lagi dari asc. Offset selalu kembali ke 0.
+  const handleSort = useCallback((field) => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      const curKey = p.get("sort");
+      const curDir = p.get("dir") === "desc" ? "desc" : "asc";
+      p.set("sort", field);
+      p.set("dir", curKey === field && curDir === "asc" ? "desc" : "asc");
+      p.set("offset", "0");
+      return p;
+    });
+  }, [setSearchParams]);
+
+  // Label header kolom berupa tombol pengurutan: ⇅ (belum aktif), ▲ (A→Z), ▼ (Z→A)
+  const sortLabel = (label, field) => {
+    const active = sortKey === field;
+    const nextDir = active && sortDir === "asc" ? "Z→A" : "A→Z";
+    return (
+      <button
+        type="button"
+        onClick={() => handleSort(field)}
+        title={`Urutkan ${label} ${nextDir}`}
+        style={{
+          background: 'none', border: 'none', padding: 0, margin: 0,
+          font: 'inherit', color: 'inherit', cursor: 'pointer',
+          display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap',
+        }}
+      >
+        {label}
+        <span style={{ fontSize: 11, opacity: active ? 1 : 0.35 }}>
+          {active ? (sortDir === "asc" ? '▲' : '▼') : '⇅'}
+        </span>
+      </button>
+    );
+  };
+
   const columns = [
     { key: 'Thumbnail', label: '' },
-    { key: 'Value', label: 'Search Key' },
-    { key: 'Name', label: 'Partner Name' },
+    { key: 'Value', label: sortLabel('Search Key', 'Value') },
+    { key: 'Name', label: sortLabel('Product Name', 'Name') },
+    { key: 'Category', label: 'Category' },
     { key: 'UPC', label: 'UPC/EAN' },
   ];
 
@@ -135,7 +187,7 @@ function ProductList() {
     mode === "append" ? setLoadingMore(true) : setLoading(true);
 
     try {
-      const fields = 'Name,Value,Description,IsPurchased,IsSold,UPC';
+      const fields = 'Name,Value,Description,IsPurchased,IsSold,UPC,M_Product_Category_ID';
       let url = `/models/m_product?$select=${fields}&$top=${pageSize}&$skip=${currentOffset}`;
 
       const filterParts = [];
@@ -149,6 +201,10 @@ function ProductList() {
       }
       if (filterParts.length > 0) {
         url += `&$filter=${filterParts.join(" and ")}`;
+      }
+      if (sortKey) {
+        // Nama bisa kembar → Value sebagai pembeda supaya paging ($skip) tetap stabil
+        url += `&$orderby=${sortKey} ${sortDir}` + (sortKey === 'Name' ? `,Value ${sortDir}` : '');
       }
 
       const data = await idempiereApi(url);
@@ -168,7 +224,7 @@ function ProductList() {
       setLoadingMore(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, selectedCategoriesKey]); // ⬅️ offset tidak masuk deps karena selalu dikirim via parameter
+  }, [search, selectedCategoriesKey, sortKey, sortDir]); // ⬅️ offset tidak masuk deps karena selalu dikirim via parameter
 
   // ─── Fetch data setiap kali offset, search, ATAU kategori (dari URL) berubah ───
   useEffect(() => {
@@ -294,6 +350,7 @@ function ProductList() {
 
     return {
       ...p,
+      Category: categoryNameById.get(Number(p.M_Product_Category_ID?.id)) || p.M_Product_Category_ID?.identifier || '-',
       Thumbnail: url ? (
         <div style={{ ...thumbBoxStyle, background: '#f1f5f9' }}>
           <img src={url} alt={p.Name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
