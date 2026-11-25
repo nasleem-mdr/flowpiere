@@ -11,6 +11,7 @@ import ConfirmModal from '@/features/master/product/components/ConfirmModal';
 // jadi sengaja dipakai ulang biar tampilan konsisten antar halaman master
 // data. Kalau nanti mau dirapikan, tinggal pindah ke @/css/MasterDetail.css.
 import '@/css/PartnerDetail.css';
+import '@/css/MasterDetail.css';
 
 // Helper generik untuk baca id & label dari field referensi iDempiere REST
 // (mis. { id: 1000000, identifier: "Jakarta" }). Sama persis polanya dengan
@@ -528,145 +529,147 @@ function BusinessPartnerDetail() {
                     ) : locationLines.length === 0 ? (
                         <p className="empty-note">Belum ada alamat.</p>
                     ) : (
-                        <table className="modern-table">
-                            <thead>
-                                <tr>
-                                    <th>Nama Alamat *</th>
-                                    <th>Phone</th>
-                                    <th>Address 1</th>
-                                    <th>Address 2</th>
-                                    <th>City</th>
-                                    <th>Postal</th>
-                                    <th style={{ width: '200px' }}>Country *</th>
-                                    <th style={{ textAlign: 'center' }}>Bill To</th>
-                                    <th style={{ textAlign: 'center' }}>Ship To</th>
-                                    <th style={{ textAlign: 'center' }}>Pay From</th>
-                                    <th style={{ textAlign: 'center' }}>Remit To</th>
-                                    {isEditing && <th style={{ width: '60px' }}></th>}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {locationLines.map((line) => {
-                                    const key = lineKey(line);
-                                    return (
-                                        <tr key={key}>
-                                            {isEditing ? (
-                                                <>
-                                                    <td>
-                                                        <input
-                                                            value={line.Name}
-                                                            onChange={(e) => handleLocationLineChange(line, "Name", e.target.value)}
+                        <div className="table-scroll">
+                            <table className="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nama Alamat *</th>
+                                        <th>Phone</th>
+                                        <th>Address 1</th>
+                                        <th>Address 2</th>
+                                        <th>City</th>
+                                        <th>Postal</th>
+                                        <th style={{ width: '200px' }}>Country *</th>
+                                        <th style={{ textAlign: 'center' }}>Bill To</th>
+                                        <th style={{ textAlign: 'center' }}>Ship To</th>
+                                        <th style={{ textAlign: 'center' }}>Pay From</th>
+                                        <th style={{ textAlign: 'center' }}>Remit To</th>
+                                        {isEditing && <th style={{ width: '60px' }}></th>}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {locationLines.map((line) => {
+                                        const key = lineKey(line);
+                                        return (
+                                            <tr key={key}>
+                                                {isEditing ? (
+                                                    <>
+                                                        <td>
+                                                            <input
+                                                                value={line.Name}
+                                                                onChange={(e) => handleLocationLineChange(line, "Name", e.target.value)}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                value={line.Phone}
+                                                                onChange={(e) => handleLocationLineChange(line, "Phone", e.target.value)}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                value={line.Address1}
+                                                                onChange={(e) => handleLocationLineChange(line, "Address1", e.target.value)}
+                                                                style={{ width: '140px' }}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                value={line.Address2}
+                                                                onChange={(e) => handleLocationLineChange(line, "Address2", e.target.value)}
+                                                                style={{ width: '140px' }}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                style={{ width: '100px' }}
+                                                                value={line.City}
+                                                                onChange={(e) => handleLocationLineChange(line, "City", e.target.value)}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                style={{ width: '80px' }}
+                                                                value={line.Postal}
+                                                                onChange={(e) => handleLocationLineChange(line, "Postal", e.target.value)}
+                                                            />
+                                                        </td>
+                                                        <td style={{ minWidth: '180px' }}>
+                                                        <AsyncSelect
+                                                            cacheOptions
+                                                            defaultOptions
+                                                            loadOptions={loadCountryOptions}
+                                                            placeholder="Cari Negara..."
+                                                            isClearable
+                                                            // Tampilkan value yang sedang terpilih saat ini
+                                                            value={
+                                                                line.C_Country_ID
+                                                                    ? {
+                                                                        value: String(line.C_Country_ID),
+                                                                        label: line.CountryLabel || "Selected",
+                                                                    }
+                                                                    : null
+                                                            }
+                                                            onChange={(selectedOption) => {
+                                                                handleLocationLineChange(
+                                                                    line,
+                                                                    "C_Country_ID",
+                                                                    selectedOption ? selectedOption.value : ""
+                                                                );
+                                                                handleLocationLineChange(
+                                                                    line,
+                                                                    "CountryLabel",
+                                                                    selectedOption ? selectedOption.label : ""
+                                                                );
+                                                            }}
+                                                            styles={{
+                                                                control: (base) => ({
+                                                                    ...base,
+                                                                    minHeight: '32px',
+                                                                    fontSize: '13px',
+                                                                }),
+                                                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                                                            }}
+                                                            menuPortalTarget={document.body}
                                                         />
                                                     </td>
-                                                    <td>
-                                                        <input
-                                                            value={line.Phone}
-                                                            onChange={(e) => handleLocationLineChange(line, "Phone", e.target.value)}
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            value={line.Address1}
-                                                            onChange={(e) => handleLocationLineChange(line, "Address1", e.target.value)}
-                                                            style={{ width: '140px' }}
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            value={line.Address2}
-                                                            onChange={(e) => handleLocationLineChange(line, "Address2", e.target.value)}
-                                                            style={{ width: '140px' }}
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            style={{ width: '100px' }}
-                                                            value={line.City}
-                                                            onChange={(e) => handleLocationLineChange(line, "City", e.target.value)}
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            style={{ width: '80px' }}
-                                                            value={line.Postal}
-                                                            onChange={(e) => handleLocationLineChange(line, "Postal", e.target.value)}
-                                                        />
-                                                    </td>
-                                                    <td style={{ minWidth: '180px' }}>
-                                                    <AsyncSelect
-                                                        cacheOptions
-                                                        defaultOptions
-                                                        loadOptions={loadCountryOptions}
-                                                        placeholder="Cari Negara..."
-                                                        isClearable
-                                                        // Tampilkan value yang sedang terpilih saat ini
-                                                        value={
-                                                            line.C_Country_ID
-                                                                ? {
-                                                                    value: String(line.C_Country_ID),
-                                                                    label: line.CountryLabel || "Selected",
-                                                                }
-                                                                : null
-                                                        }
-                                                        onChange={(selectedOption) => {
-                                                            handleLocationLineChange(
-                                                                line,
-                                                                "C_Country_ID",
-                                                                selectedOption ? selectedOption.value : ""
-                                                            );
-                                                            handleLocationLineChange(
-                                                                line,
-                                                                "CountryLabel",
-                                                                selectedOption ? selectedOption.label : ""
-                                                            );
-                                                        }}
-                                                        styles={{
-                                                            control: (base) => ({
-                                                                ...base,
-                                                                minHeight: '32px',
-                                                                fontSize: '13px',
-                                                            }),
-                                                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                                                        }}
-                                                        menuPortalTarget={document.body}
-                                                    />
-                                                </td>
-                                                    <td style={{ textAlign: 'center' }}>
-                                                        <input type="checkbox" checked={line.IsBillTo} onChange={(e) => handleLocationLineChange(line, "IsBillTo", e.target.checked)} />
-                                                    </td>
-                                                    <td style={{ textAlign: 'center' }}>
-                                                        <input type="checkbox" checked={line.IsShipTo} onChange={(e) => handleLocationLineChange(line, "IsShipTo", e.target.checked)} />
-                                                    </td>
-                                                    <td style={{ textAlign: 'center' }}>
-                                                        <input type="checkbox" checked={line.IsPayFrom} onChange={(e) => handleLocationLineChange(line, "IsPayFrom", e.target.checked)} />
-                                                    </td>
-                                                    <td style={{ textAlign: 'center' }}>
-                                                        <input type="checkbox" checked={line.IsRemitTo} onChange={(e) => handleLocationLineChange(line, "IsRemitTo", e.target.checked)} />
-                                                    </td>
-                                                    <td className="row-actions">
-                                                        <button className="icon-btn icon-btn-delete" title="Hapus alamat" onClick={() => handleDeleteLocationLine(line)}>🗑️</button>
-                                                    </td>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <td><strong>{line.Name || '-'}</strong></td>
-                                                    <td>{line.Phone || '-'}</td>
-                                                    <td>{line.Address1 || '-'}</td>
-                                                    <td>{line.Address2 || '-'}</td>
-                                                    <td>{line.City || '-'}</td>
-                                                    <td>{line.Postal || '-'}</td>
-                                                    <td>{line.CountryLabel}</td>
-                                                    <td style={{ textAlign: 'center' }}>{line.IsBillTo ? '✅' : '—'}</td>
-                                                    <td style={{ textAlign: 'center' }}>{line.IsShipTo ? '✅' : '—'}</td>
-                                                    <td style={{ textAlign: 'center' }}>{line.IsPayFrom ? '✅' : '—'}</td>
-                                                    <td style={{ textAlign: 'center' }}>{line.IsRemitTo ? '✅' : '—'}</td>
-                                                </>
-                                            )}
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            <input type="checkbox" checked={line.IsBillTo} onChange={(e) => handleLocationLineChange(line, "IsBillTo", e.target.checked)} />
+                                                        </td>
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            <input type="checkbox" checked={line.IsShipTo} onChange={(e) => handleLocationLineChange(line, "IsShipTo", e.target.checked)} />
+                                                        </td>
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            <input type="checkbox" checked={line.IsPayFrom} onChange={(e) => handleLocationLineChange(line, "IsPayFrom", e.target.checked)} />
+                                                        </td>
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            <input type="checkbox" checked={line.IsRemitTo} onChange={(e) => handleLocationLineChange(line, "IsRemitTo", e.target.checked)} />
+                                                        </td>
+                                                        <td className="row-actions">
+                                                            <button className="icon-btn icon-btn-delete" title="Hapus alamat" onClick={() => handleDeleteLocationLine(line)}>🗑️</button>
+                                                        </td>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <td><strong>{line.Name || '-'}</strong></td>
+                                                        <td>{line.Phone || '-'}</td>
+                                                        <td>{line.Address1 || '-'}</td>
+                                                        <td>{line.Address2 || '-'}</td>
+                                                        <td>{line.City || '-'}</td>
+                                                        <td>{line.Postal || '-'}</td>
+                                                        <td>{line.CountryLabel}</td>
+                                                        <td style={{ textAlign: 'center' }}>{line.IsBillTo ? '✅' : '—'}</td>
+                                                        <td style={{ textAlign: 'center' }}>{line.IsShipTo ? '✅' : '—'}</td>
+                                                        <td style={{ textAlign: 'center' }}>{line.IsPayFrom ? '✅' : '—'}</td>
+                                                        <td style={{ textAlign: 'center' }}>{line.IsRemitTo ? '✅' : '—'}</td>
+                                                    </>
+                                                )}
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
 
                     {isEditing && (

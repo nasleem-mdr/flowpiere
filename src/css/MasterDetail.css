@@ -1,0 +1,57 @@
+/* ===== Fix header (topbar) di mobile ===== */
+
+/* Cegah card & grid melebar melebihi layar */
+.card-container {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .detail-grid > * {
+    min-width: 0;            /* grid/flex child boleh menyusut */
+  }
+  @media (max-width: 768px) {
+    .detail-topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-start;   /* rata kiri, bukan space-between */
+      gap: 8px;
+      width: 100%;
+      max-width: 100vw;
+      box-sizing: border-box;
+    }
+  
+    .detail-topbar .btn-back,
+    .detail-topbar > .btn,
+    .detail-topbar .topbar-actions {
+      display: inline-flex !important;
+      visibility: visible !important;
+      flex-shrink: 0;
+      white-space: nowrap;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+  
+    .detail-topbar .btn-back { order: 1; }
+    .detail-topbar > .btn,
+    .detail-topbar .topbar-actions { order: 2; gap: 8px; }  /* Edit di samping Back */
+  
+    .detail-topbar .product-id-badge {
+      order: 3;
+      flex: 0 0 100%;
+      text-align: left;
+      font-size: 12px;
+    }
+    .detail-topbar {
+        width: auto;
+        max-width: calc(100vw - 56px);  /* kurangi margin + padding card; sesuaikan 40-70px */
+      }
+      
+      .detail-topbar .btn-back,
+      .detail-topbar > .btn {
+        flex: 0 1 auto;
+        min-width: 0;
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+}

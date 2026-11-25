@@ -26,6 +26,7 @@ import useUOMConversionSubmit, {
 import SuccessModal from '@/features/master/product/components/SuccessModal';
 import ConfirmModal from '@/features/master/product/components/ConfirmModal';
 import '@/css/ProductDetail.css';
+import '@/css/MasterDetail.css';
 
 // ─── Opsi RoundingType ────────────────────────────────────────────────────
 // Value pakai ANGKA MURNI (bukan string) karena dipakai langsung untuk
@@ -1115,7 +1116,7 @@ function ProductDetail() {
                 )}
             </div>
 
-            <div className="detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div className="detail-grid">
                 {/* SECTION 1: INFORMASI UTAMA */}
                 <div className="detail-section">
                     <h3>General Information</h3>
@@ -1400,7 +1401,7 @@ function ProductDetail() {
                             <p className="muted-note">Memuat...</p>
                         ) : (
                             <>
-                                <div className="info-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
+                                <div className="info-group bom-header-grid">
                                     <div>
                                         <label>BOM Value</label>
                                         {isEditing ? (
