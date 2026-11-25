@@ -116,10 +116,22 @@ export function parseIdempiereError(err) {
         return `Tabel "${noTableMatch[1]}" tidak dikenali oleh server iDempiere-mu. Instance-mu kemungkinan pakai nama tabel yang berbeda — cek konstanta nama tabel di useProductDetailSubmit.js.`;
     }
 
+    // Aturan unik dari iDempiere sendiri (AD_Index), mis. "Require unique data: Current vendor".
+    const requireUniqueMatch = raw.match(/Require unique data:\s*([^\n]+)/i);
+    if (requireUniqueMatch) {
+        const what = requireUniqueMatch[1].trim();
+        if (/current vendor/i.test(what)) {
+            return 'Satu produk hanya boleh punya SATU Current Vendor. Tandai vendor yang dipakai lewat kolom "Current" di tabel Vendor Pricing.';
+        }
+        return `Data harus unik: ${what}.`;
+    }
+
     // Kasus umum lain: duplicate key / unique constraint.
-    const duplicateMatch = raw.match(/duplicate key value violates unique constraint/i);
+    const duplicateMatch = raw.match(/duplicate key value violates unique constraint(?:\s+"?([^"\s]+)"?)?/i);
     if (duplicateMatch) {
-        return "Data ini sudah ada (melanggar aturan unik), cek Search Key / kombinasi datanya.";
+        const keyMatch = raw.match(/Key \(([^)]+)\)=\(([^)]+)\)/i);
+        const detail = [duplicateMatch[1], keyMatch ? `${keyMatch[1]} = ${keyMatch[2]}` : null].filter(Boolean).join(" — ");
+        return `Data ini sudah ada (melanggar aturan unik${detail ? `: ${detail}` : ""}), cek Search Key / kombinasi datanya.`;
     }
 
     // Fallback: ambil bagian pesan setelah "Database Error." kalau ada.
@@ -186,6 +198,46 @@ export default function useProductDetailSubmit(idempiereApi) {
         }) =>
             run(async () => {
                 let currentStep = "product";
+
+                // POST satu baris Vendor Pricing. Kalau server menjawab duplicate/unique padahal baris itu
+                // tidak tampil di daftar (record non-aktif tersisa, karena REST hanya mengembalikan
+                // record aktif), cari record-nya lalu AKTIFKAN kembali + isi data baru — pola yang sama
+                // seperti Role/User assignment. Kalau pencarian tidak menemukan apa-apa, errornya bukan
+                // duplikat produk–vendor → error asli dilempar ulang.
+                const createVendorLine = async (productId, bpId, line) => {
+                    const data = {
+                        VendorProductNo: line.VendorProductNo || "",
+                        PriceList: parseFloat(line.PriceList) || 0,
+                        PriceLastPO: parseFloat(line.PriceLastPO) || 0,
+                        ...(typeof line.IsCurrentVendor === "boolean" ? { IsCurrentVendor: line.IsCurrentVendor } : {}),
+                    };
+                    try {
+                        await idempiereApi(`/models/${VENDOR_PRICING_TABLE}`, {
+                            method: "POST",
+                            body: JSON.stringify({
+                                M_Product_ID: { id: parseInt(productId, 10) },
+                                C_BPartner_ID: { id: bpId },
+                                ...data,
+                            }),
+                        });
+                    } catch (postErr) {
+                        if (!/duplicate key|unique/i.test(postErr?.message || "")) throw postErr;
+
+                        const found = await idempiereApi(
+                            `/models/${VENDOR_PRICING_TABLE}` +
+                            `?$filter=M_Product_ID eq ${parseInt(productId, 10)} and C_BPartner_ID eq ${bpId}` +
+                            ` and (IsActive eq true or IsActive eq false)`
+                        );
+                        const row = (found?.records || [])[0];
+                        const ref = row && (row.uid ?? (typeof row.id !== "object" ? row.id : undefined));
+                        if (!ref) throw postErr;
+
+                        await idempiereApi(`/models/${VENDOR_PRICING_TABLE}/${ref}`, {
+                            method: "PUT",
+                            body: JSON.stringify({ ...data, IsActive: true }),
+                        });
+                    }
+                };
                 const partial = {
                     productId: null,
                     vendorLinesCreated: 0,
@@ -221,44 +273,76 @@ export default function useProductDetailSubmit(idempiereApi) {
                     partial.productId = finalProductId;
 
                     // ── Step 2: Vendor Pricing ───────────────────────────
+                    // Server hanya mengizinkan SATU vendor aktif per produk dengan IsCurrentVendor = true
+                    // ("Require unique data: Current vendor"). Karena itu urutannya:
+                    //   1) HAPUS baris yang dibuang            (vendor lama tidak lagi jadi penghalang)
+                    //   2) LEPAS status Current yang dicopot   (true → false)
+                    //   3) tambah/ubah baris biasa             (baris baru yang bukan Current)
+                    //   4) JADIKAN Current yang baru           (terakhir, saat tidak ada Current lain)
+                    // Baris tanpa field IsCurrentVendor (pemanggil lama) hanya ikut langkah 1 & 3.
+                    currentStep = "vendor-lines-delete";
+                    for (const delRef of deletedVendorIds) {
+                        await idempiereApi(`/models/${VENDOR_PRICING_TABLE}/${delRef}`, { method: "DELETE" });
+                        partial.vendorLinesDeleted++;
+                    }
+
+                    const hasFlag   = (l) => typeof l.IsCurrentVendor === "boolean";
+                    const isDemote  = (l) => !l._isNew && hasFlag(l) && l.wasCurrent === true && l.IsCurrentVendor === false;
+                    const isPromote = (l) => hasFlag(l) && l.IsCurrentVendor === true && (l._isNew || l.wasCurrent !== true);
+
+                    const vendorData = (l) => ({
+                        VendorProductNo: l.VendorProductNo || "",
+                        PriceList: parseFloat(l.PriceList) || 0,
+                        PriceLastPO: parseFloat(l.PriceLastPO) || 0,
+                    });
+                    const putVendor = async (line, extra = {}) => {
+                        // M_Product_PO ber-PK komposit → record dari REST tidak punya `id`, hanya `uid`.
+                        const ref = line.recordId ?? line.id;
+                        const targetUrl = ref
+                            ? `/models/${VENDOR_PRICING_TABLE}/${ref}`
+                            : `/models/${VENDOR_PRICING_TABLE}/(${finalProductId},${line.C_BPartner_ID})`;
+                        await idempiereApi(targetUrl, {
+                            method: "PUT",
+                            body: JSON.stringify({ ...vendorData(line), ...extra }),
+                        });
+                    };
+                    const postVendor = async (line) => {
+                        const bpId = parseInt(line.C_BPartner_ID, 10);
+                        if (!Number.isFinite(bpId)) {
+                            throw new Error("Vendor pada baris Vendor Pricing tidak valid.");
+                        }
+                        await createVendorLine(finalProductId, bpId, line);
+                    };
+
+                    currentStep = "vendor-lines-release-current";
+                    for (const line of vendorLines) {
+                        if (!isDemote(line)) continue;
+                        await putVendor(line, { IsCurrentVendor: false });
+                        partial.vendorLinesUpdated++;
+                    }
+
                     currentStep = "vendor-lines";
                     for (const line of vendorLines) {
+                        if (isDemote(line) || isPromote(line)) continue;
                         if (line._isNew) {
-                            const bpId = parseInt(line.C_BPartner_ID, 10);
-                            if (!Number.isFinite(bpId)) {
-                                throw new Error("Vendor pada baris Vendor Pricing tidak valid.");
-                            }
-                            await idempiereApi(`/models/${VENDOR_PRICING_TABLE}`, {
-                                method: "POST",
-                                body: JSON.stringify({
-                                    M_Product_ID: { id: parseInt(finalProductId, 10) },
-                                    C_BPartner_ID: { id: bpId },
-                                    VendorProductNo: line.VendorProductNo || "",
-                                    PriceList: parseFloat(line.PriceList) || 0,
-                                    PriceLastPO: parseFloat(line.PriceLastPO) || 0,
-                                }),
-                            });
+                            await postVendor(line);
                             partial.vendorLinesCreated++;
                         } else if (line._dirty) {
-                            const targetUrl = line.id
-                                ? `/models/${VENDOR_PRICING_TABLE}/${line.id}`
-                                : `/models/${VENDOR_PRICING_TABLE}/(${finalProductId},${line.C_BPartner_ID})`;
-
-                            await idempiereApi(targetUrl, {
-                                method: "PUT",
-                                body: JSON.stringify({
-                                    VendorProductNo: line.VendorProductNo || "",
-                                    PriceList: parseFloat(line.PriceList) || 0,
-                                    PriceLastPO: parseFloat(line.PriceLastPO) || 0,
-                                }),
-                            });
+                            await putVendor(line);
                             partial.vendorLinesUpdated++;
                         }
                     }
-                    currentStep = "vendor-lines-delete";
-                    for (const delId of deletedVendorIds) {
-                        await idempiereApi(`/models/${VENDOR_PRICING_TABLE}/${delId}`, { method: "DELETE" });
-                        partial.vendorLinesDeleted++;
+
+                    currentStep = "vendor-lines-set-current";
+                    for (const line of vendorLines) {
+                        if (!isPromote(line)) continue;
+                        if (line._isNew) {
+                            await postVendor(line); // IsCurrentVendor = true ikut terkirim lewat createVendorLine
+                            partial.vendorLinesCreated++;
+                        } else {
+                            await putVendor(line, { IsCurrentVendor: true });
+                            partial.vendorLinesUpdated++;
+                        }
                     }
 
                     // ── Step 3: Sales Price ──────────────────────────────

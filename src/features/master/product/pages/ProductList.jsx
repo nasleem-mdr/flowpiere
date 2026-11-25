@@ -13,6 +13,7 @@ import { PageHeader, DataTable } from '@/shared/components/setup';
 import { idempiereApi, getFirstProductImageBlobUrl } from '@/api/idempiereApi';
 import { useOrgInfo } from '@/shared/hooks/useOrgInfo';
 import { generateProductPDF } from '../utils/generateProductPDF';
+import ProductMobileList from '../components/ProductMobileList';
 import '@/App.css';
 
 // Kolom yang boleh diurutkan. Nilai ?sort= di URL masuk ke $orderby, jadi WAJIB di-whitelist.
@@ -24,12 +25,49 @@ const thumbBoxStyle = {
   flexShrink: 0,
 };
 
+// Layar sempit (< 768px) memakai daftar kartu (ProductMobileList) alih-alih tabel.
+const MOBILE_QUERY = '(max-width: 767px)';
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(MOBILE_QUERY).matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY);
+    const onChange = (e) => setIsMobile(e.matches);
+    setIsMobile(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return isMobile;
+}
+
+const mobileStyles = {
+  // maxWidth ikut lebar layar: kartu tidak pernah lebih lebar dari viewport
+  page: {
+    boxSizing: 'border-box', width: '100%', maxWidth: 'calc(100vw - 24px)', minWidth: 0,
+    margin: '0 auto', padding: '14px 12px', background: '#fff', borderRadius: 12,
+  },
+  titleRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 },
+  title: { margin: 0, fontSize: 18, color: '#1a1a2e' },
+  newBtn: {
+    color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6,
+    backgroundColor: '#2e7d32', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap',
+  },
+  search: {
+    boxSizing: 'border-box', width: '100%', padding: '10px 12px', fontSize: 14,
+    border: '1px solid #cbd5e1', borderRadius: 8, marginBottom: 10,
+  },
+  toolbar: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 12 },
+  chip: { padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: 999, fontSize: 12.5, background: '#f8fafc' },
+};
+
 function ProductList() {
   // ─── Posisi (offset) & kata kunci pencarian disimpan di URL query string,
   // BUKAN di useState biasa — supaya saat komponen ini unmount (pindah ke
   // halaman detail/edit) lalu balik lagi via navigate(-1)/tombol Back,
   // posisi halaman & filter yang terakhir dibuka tidak hilang.
   const [searchParams, setSearchParams] = useSearchParams();
+  const isMobile = useIsMobile();
   const offset = parseInt(searchParams.get("offset") || "0", 10);
   const search = searchParams.get("q") || "";
 
@@ -56,6 +94,8 @@ function ProductList() {
   const { orgInfo } = useOrgInfo();   // logo organisasi untuk header PDF
   const [thumbnails, setThumbnails] = useState({});
   const thumbUrlsRef = useRef([]);
+  const thumbCacheRef = useRef(new Map());   // id produk → blob URL | null (hanya muat yang belum ada)
+  const reqIdRef = useRef(0);                // hasil request lama (kalah cepat) dibuang
 
   // ─── State untuk daftar kategori (untuk dropdown filter) ───────────────
   const [categoryOptions, setCategoryOptions] = useState([]);
@@ -98,37 +138,41 @@ function ProductList() {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
+  // Thumbnail dimuat INKREMENTAL: hanya produk yang belum pernah dimuat. Penting untuk daftar mobile
+  // yang terus bertambah (infinite scroll) — tanpa ini semua gambar diminta ulang di setiap append.
   useEffect(() => {
-    let cancelled = false;
+    const cache = thumbCacheRef.current;
+    const missing = products
+      .map((p) => p.id ?? p.M_Product_ID)
+      .filter((pid) => !cache.has(pid));
 
-    const loadThumbnails = async () => {
-      thumbUrlsRef.current.forEach(u => URL.revokeObjectURL(u));
-      thumbUrlsRef.current = [];
+    if (missing.length === 0) {
+      setThumbnails(Object.fromEntries(cache));
+      return;
+    }
 
+    (async () => {
       const entries = await Promise.all(
-        products.map(async (p) => {
-          const productId = p.id ?? p.M_Product_ID;
+        missing.map(async (pid) => {
           try {
-            const url = await getFirstProductImageBlobUrl(productId);
+            const url = await getFirstProductImageBlobUrl(pid);
             if (url) thumbUrlsRef.current.push(url);
-            return [productId, url];
+            return [pid, url || null];
           } catch {
-            return [productId, null];
+            return [pid, null];
           }
         })
       );
-
-      if (!cancelled) setThumbnails(Object.fromEntries(entries));
-    };
-
-    if (products.length > 0) loadThumbnails();
-    else setThumbnails({});
-
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      entries.forEach(([pid, url]) => cache.set(pid, url));
+      setThumbnails(Object.fromEntries(cache));
+    })();
   }, [products]);
 
   useEffect(() => {
@@ -184,6 +228,7 @@ function ProductList() {
 
   const fetchProduct = useCallback(async (currentOffset, mode) => {
     // mode: 'replace' (desktop pagination / reset filter) atau 'append' (mobile infinite scroll)
+    const reqId = ++reqIdRef.current;
     mode === "append" ? setLoadingMore(true) : setLoading(true);
 
     try {
@@ -192,7 +237,7 @@ function ProductList() {
 
       const filterParts = [];
       if (search) {
-        filterParts.push(`contains(tolower(Name),'${search.toLowerCase()}')`);
+        filterParts.push(`contains(tolower(Name),'${search.toLowerCase().replace(/'/g, "''")}')`);
       }
       if (selectedCategoriesKey) {
         const ids = selectedCategoriesKey.split(",");
@@ -208,20 +253,24 @@ function ProductList() {
       }
 
       const data = await idempiereApi(url);
+      if (reqId !== reqIdRef.current) return; // sudah digantikan request yang lebih baru
       const newRecords = data.records || [];
 
       setProducts(prev => mode === "append" ? [...prev, ...newRecords] : newRecords);
       setTotalRecords(data['row-count'] ?? 0);
       setHasMore(newRecords.length === pageSize);
     } catch (err) {
+      if (reqId !== reqIdRef.current) return;
       console.error("Fetch Error:", err.message);
       if (mode !== "append") {
         setProducts([]);
         setTotalRecords(0);
       }
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (reqId === reqIdRef.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, selectedCategoriesKey, sortKey, sortDir]); // ⬅️ offset tidak masuk deps karena selalu dikirim via parameter
@@ -294,6 +343,24 @@ function ProductList() {
       return p;
     });
   }, [setSearchParams]);
+
+  // Mobile: tambah halaman berikutnya TANPA mengubah ?offset= di URL. (loadMore di atas mengubah
+  // offset → efek 'replace' ikut jalan dan menimpa daftar dengan halaman baru saja.)
+  // Offset = jumlah item yang sudah tampil (diambil dari closure render yang sama dengan sentinel,
+  // bukan dari ref yang diperbarui di efek — efek anak berjalan SEBELUM efek induk).
+  const loadMoreMobile = useCallback(() => {
+    if (loading || loadingMore || !hasMore) return;
+    fetchProduct(products.length, "append");
+  }, [loading, loadingMore, hasMore, fetchProduct, products.length]);
+
+  // Kolom cari mobile (PageHeader tidak dipakai di mobile): debounce lalu masuk ke URL ?q=
+  const [mobileSearch, setMobileSearch] = useState(search);
+  useEffect(() => { setMobileSearch(search); }, [search]);
+  useEffect(() => {
+    if (!isMobile || mobileSearch === search) return undefined;
+    const t = setTimeout(() => handleSearchChange(mobileSearch), 400);
+    return () => clearTimeout(t);
+  }, [mobileSearch, search, isMobile, handleSearchChange]);
 
   const handleDownload = async (item) => {
     const productId = item.id ?? item.M_Product_ID;
@@ -442,6 +509,44 @@ function ProductList() {
       )}
     </div>
   );
+
+  if (isMobile) {
+    return (
+      <div style={mobileStyles.page}>
+        <div style={mobileStyles.titleRow}>
+          <h2 style={mobileStyles.title}>Product / Service</h2>
+          <Link to="/product-detail/new">
+            <button type="button" style={mobileStyles.newBtn}>+ New</button>
+          </Link>
+        </div>
+
+        <input
+          type="search"
+          value={mobileSearch}
+          onChange={(e) => setMobileSearch(e.target.value)}
+          placeholder="Cari nama produk..."
+          style={mobileStyles.search}
+        />
+
+        <div style={mobileStyles.toolbar}>
+          {categoryFilterUI}
+          <span style={{ fontSize: 12, color: '#64748b' }}>Urutkan:</span>
+          <span style={mobileStyles.chip}>{sortLabel('Search Key', 'Value')}</span>
+          <span style={mobileStyles.chip}>{sortLabel('Product Name', 'Name')}</span>
+        </div>
+
+        <ProductMobileList
+          items={tableData}
+          loading={loading}
+          loadingMore={loadingMore}
+          hasMore={hasMore}
+          totalRecords={totalRecords}
+          onLoadMore={loadMoreMobile}
+          renderActions={actionRenderer}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="card-container">

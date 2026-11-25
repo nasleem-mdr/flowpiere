@@ -168,7 +168,8 @@ const toNumericId = (rawId) => {
 };
 
 // Key stabil untuk satu baris (Vendor Pricing / Sales Price / BOM line).
-const lineKey = (line) => getId(line) ?? line._localId;
+// Utamakan `uid`: untuk tabel ber-PK komposit (mis. M_Product_PO) getId() jatuh ke kolom FK, bukan id baris.
+const lineKey = (line) => line.uid ?? getId(line) ?? line._localId;
 
 function ProductDetail() {
     const { id } = useParams();
@@ -317,7 +318,8 @@ function ProductDetail() {
             // Tandai setiap baris dari server bahwa baris ini SUDAH ADA
             const records = (data.records || []).map(rec => ({
                 ...rec,
-                _isFetched: true
+                _isFetched: true,
+                _origCurrent: isYes(rec.IsCurrentVendor), // status Current saat dimuat (untuk urutan lepas/jadikan Current saat simpan)
             }));
             setVendorLines(records);
         } catch (err) {
@@ -604,11 +606,15 @@ function ProductDetail() {
             return {
                 // Jika l._isExisting atau numericId atau sudah ada C_BPartner_ID dari fetch awal, tandai
                 id: numericId,
+                // M_Product_PO ber-PK komposit → tidak punya `id`, hanya `uid` (dipakai untuk PUT/DELETE)
+                recordId: l.uid ?? numericId,
                 compositeKey: numericId ? null : `${id}_${bpartnerId}`, // composite key fallback jika REST plugin mendukung composite key URL
                 C_BPartner_ID: bpartnerId,
                 VendorProductNo: l.VendorProductNo,
                 PriceList: l.PriceList,
                 PriceLastPO: l.PriceLastPO,
+                IsCurrentVendor: isYes(l.IsCurrentVendor), // hanya SATU vendor aktif boleh Current (aturan unik server)
+                wasCurrent: isYes(l._origCurrent),         // status saat dimuat → hook tahu mana yang harus dilepas dulu
                 _dirty: l._dirty === true,
                 _isNew: !numericId && !l._isFetched, // Tandai eksplisit apakah baris ini baru ditambahkan di UI
             };
@@ -897,8 +903,25 @@ function ProductDetail() {
                 VendorProductNo: "",
                 PriceList: 0,
                 PriceLastPO: 0,
+                // Server hanya mengizinkan SATU Current Vendor per produk: vendor baru jadi Current
+                // hanya kalau tidak ada vendor lain yang masih Current (mis. yang lama sudah dihapus).
+                IsCurrentVendor: !prev.some((l) => isYes(l.IsCurrentVendor)),
             },
         ]);
+    };
+
+    // Radio "Current": hanya satu vendor yang boleh Current. Yang lain otomatis dilepas;
+    // urutan lepas → jadikan saat simpan diatur di useProductDetailSubmit.
+    const handleSetCurrentVendor = (line) => {
+        setVendorLines((prev) =>
+            prev.map((l) => {
+                const next = lineKey(l) === lineKey(line);
+                if (isYes(l.IsCurrentVendor) === next) return l;
+                const updated = { ...l, IsCurrentVendor: next };
+                if (l._isFetched) updated._dirty = true;
+                return updated;
+            })
+        );
     };
 
     const handleDeleteVendorLine = (line) => {
@@ -907,9 +930,14 @@ function ProductDetail() {
             message: `Yakin ingin menghapus vendor "${getLabel(line.C_BPartner_ID)}" dari daftar Vendor Pricing? Perubahan baru permanen setelah disimpan.`,
             confirmLabel: "Hapus",
             onConfirm: () => {
-                const existingId = getId(line);
-                if (existingId) {
-                    setDeletedVendorLineIds((prev) => [...prev, existingId]);
+                // BUKAN getId(line): untuk baris ber-PK komposit getId() mengembalikan kolom FK
+                // (objek), sehingga DELETE ke server gagal / tak pernah terjadi. Pakai uid.
+                const existingRef = line.uid ?? toNumericId(line.id);
+                if (existingRef) {
+                    setDeletedVendorLineIds((prev) => [...prev, existingRef]);
+                } else if (line._isFetched) {
+                    // Tanpa uid & id: bentuk kunci komposit (hanya jalan kalau REST-mu mendukungnya)
+                    setDeletedVendorLineIds((prev) => [...prev, `(${id},${getId(line.C_BPartner_ID)})`]);
                 }
                 setVendorLines((prev) => prev.filter((l) => lineKey(l) !== lineKey(line)));
             },
@@ -1597,6 +1625,12 @@ function ProductDetail() {
                 <div className="detail-section" style={{ gridColumn: '1 / -1' }}>
                     <h3>Vendor Pricing</h3>
 
+                    {vendorLines.length > 0 && !vendorLines.some((l) => isYes(l.IsCurrentVendor)) && (
+                        <p className="muted-note" style={{ color: '#b45309' }}>
+                            ⚠️ Belum ada vendor yang ditandai Current — produk ini tidak akan muncul di pencarian Requisition/Purchasing.
+                        </p>
+                    )}
+
                     {isLoadingVendorLines ? (
                         <p className="muted-note">Memuat...</p>
                     ) : vendorLines.length === 0 ? (
@@ -1606,6 +1640,7 @@ function ProductDetail() {
                             <thead>
                                 <tr>
                                     <th>Vendor</th>
+                                    <th style={{ textAlign: 'center', width: '70px' }}>Current</th>
                                     <th>Vendor Product No</th>
                                     <th style={{ textAlign: 'right' }}>Price List (Vendor)</th>
                                     <th style={{ textAlign: 'right' }}>Price Last PO</th>
@@ -1618,6 +1653,17 @@ function ProductDetail() {
                                     return (
                                         <tr key={key}>
                                             <td>{getLabel(line.C_BPartner_ID)}</td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                {isEditing ? (
+                                                    <input
+                                                        type="radio"
+                                                        name="current-vendor"
+                                                        title="Jadikan Current Vendor"
+                                                        checked={isYes(line.IsCurrentVendor)}
+                                                        onChange={() => handleSetCurrentVendor(line)}
+                                                    />
+                                                ) : (isYes(line.IsCurrentVendor) ? "✓" : "")}
+                                            </td>
                                             {isEditing ? (
                                                 <>
                                                     <td>
