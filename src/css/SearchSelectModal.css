@@ -1,0 +1,105 @@
+/* SearchSelectModal — modal pilih-record dengan pencarian */
+.ssm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: 16px;
+}
+.ssm-dialog {
+    background: #fff;
+    color: #111827;
+    width: 100%;
+    max-width: 480px;
+    max-height: 80vh;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+}
+.ssm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.ssm-header h3 { margin: 0; font-size: 1.05rem; }
+.ssm-close {
+    border: none;
+    background: transparent;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #6b7280;
+}
+.ssm-close:hover { color: #111827; }
+.ssm-search {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+.ssm-search:focus { outline: 2px solid #3b82f6; outline-offset: 0; border-color: #3b82f6; }
+.ssm-list {
+    flex: 1;
+    min-height: 120px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+}
+.ssm-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    text-align: left;
+    padding: 9px 12px;
+    border: none;
+    border-bottom: 1px solid #f3f4f6;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+.ssm-item:hover, .ssm-item:focus-visible { background: #eff6ff; outline: none; }
+.ssm-item-selected { background: #dbeafe; font-weight: 600; }
+.ssm-item-secondary { font-size: 0.78rem; color: #6b7280; }
+.ssm-more {
+    margin: 8px;
+    padding: 8px;
+    border: 1px dashed #9ca3af;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+}
+.ssm-more:disabled { opacity: 0.6; cursor: default; }
+.ssm-note { margin: 0; padding: 16px; text-align: center; color: #6b7280; font-size: 0.9rem; }
+.ssm-error { color: #b91c1c; }
+.ssm-footer { font-size: 0.78rem; color: #6b7280; text-align: right; }
+
+/* Tombol pemicu modal (menggantikan <select>) */
+.ssm-trigger {
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+.ssm-trigger:hover:not(:disabled) { border-color: #3b82f6; }
+.ssm-trigger:disabled { opacity: 0.6; cursor: not-allowed; }
+.ssm-trigger-placeholder { color: #6b7280; }

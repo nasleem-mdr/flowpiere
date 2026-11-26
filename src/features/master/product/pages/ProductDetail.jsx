@@ -25,6 +25,7 @@ import useUOMConversionSubmit, {
 } from '@/features/master/product/hooks/useUOMConversionSubmit';
 import SuccessModal from '@/features/master/product/components/SuccessModal';
 import ConfirmModal from '@/features/master/product/components/ConfirmModal';
+import SearchSelectModal from '@/features/master/product/components/SearchSelectModal';
 import '@/css/ProductDetail.css';
 import '@/css/MasterDetail.css';
 
@@ -224,7 +225,12 @@ function ProductDetail() {
     const [vendorLines, setVendorLines] = useState([]);
     const [deletedVendorLineIds, setDeletedVendorLineIds] = useState([]);
     const [isLoadingVendorLines, setIsLoadingVendorLines] = useState(false);
-    const [vendorOptions, setVendorOptions] = useState([]);
+    // Vendor & UOM dipilih lewat modal pencarian (server-side) — bukan lagi
+    // <select> berisi seluruh opsi, karena REST API membatasi jumlah record
+    // per request sehingga sebagian vendor/UOM tidak pernah muncul.
+    const [showVendorPicker, setShowVendorPicker] = useState(false);
+    const [showBaseUomPicker, setShowBaseUomPicker] = useState(false);
+    const [showUomTargetPicker, setShowUomTargetPicker] = useState(false);
 
     // ─── Sales Price (M_ProductPrice) ───────────────────────────────────────
     const [priceLines, setPriceLines] = useState([]);
@@ -253,7 +259,7 @@ function ProductDetail() {
 
     // ─── Opsi untuk field mandatory M_Product (Product Category & UOM) ─────
     const [productCategories, setProductCategories] = useState([]);
-    const [uoms, setUoms] = useState([]);
+    const [baseUomName, setBaseUomName] = useState(""); // label UOM dasar yang sedang dipilih di form
     // Opsi Charge untuk field custom M_Product.C_Charge_ID (default charge Internal Use)
     const [charges, setCharges] = useState([]);
 
@@ -301,6 +307,7 @@ function ProductDetail() {
                 C_UOM_ID: getId(data.C_UOM_ID) ?? "",
                 C_Charge_ID: getId(data.C_Charge_ID) ?? "",
             });
+            setBaseUomName(typeof data.C_UOM_ID === "object" ? data.C_UOM_ID?.identifier || "" : "");
         } catch (err) {
             console.error("Gagal mengambil data produk:", err);
         } finally {
@@ -413,19 +420,6 @@ function ProductDetail() {
         }
     }, []);
 
-    // ─── FETCH: opsi vendor untuk dropdown Vendor Pricing ──────────────────
-    const fetchVendorOptions = useCallback(async () => {
-        try {
-            const data = await idempiereApi(
-                `/models/c_bpartner?$filter=IsVendor eq true and IsActive eq true&$select=Name&$orderby=Name`
-            );
-            setVendorOptions(data.records || []);
-        } catch (err) {
-            console.error("Gagal mengambil daftar Vendor:", err);
-            setVendorOptions([]);
-        }
-    }, []);
-
     // ─── FETCH: opsi Product Category (mandatory di m_product) ─────────────
     const fetchProductCategories = useCallback(async () => {
         try {
@@ -442,19 +436,26 @@ function ProductDetail() {
         }
     }, [isNew]);
 
-    // ─── FETCH: opsi UOM (mandatory di m_product) ───────────────────────────
-    const fetchUoms = useCallback(async () => {
+    // ─── FETCH: UOM default untuk produk BARU ───────────────────────────────
+    // Daftar UOM lengkap tidak lagi dimuat di sini (dicari lewat modal).
+    // Cukup ambil satu UOM default supaya form produk baru langsung terisi.
+    const fetchDefaultUom = useCallback(async () => {
+        if (!isNew) return;
         try {
-            const data = await idempiereApi(`/models/c_uom?$filter=IsActive eq true&$select=Name,IsDefault`);
-            const records = data.records || [];
-            setUoms(records);
-            if (isNew) {
-                const def = records.find((u) => u.IsDefault === true || u.IsDefault === "Y") || records[0];
-                if (def) setForm((prev) => (prev.C_UOM_ID ? prev : { ...prev, C_UOM_ID: getId(def) }));
+            let data = await idempiereApi(
+                `/models/c_uom?$filter=IsActive eq true and IsDefault eq true&$select=Name&$top=1`
+            );
+            let def = (data.records || [])[0];
+            if (!def) {
+                data = await idempiereApi(`/models/c_uom?$filter=IsActive eq true&$select=Name&$orderby=Name&$top=1`);
+                def = (data.records || [])[0];
+            }
+            if (def) {
+                setForm((prev) => (prev.C_UOM_ID ? prev : { ...prev, C_UOM_ID: getId(def) }));
+                setBaseUomName((prev) => prev || def.Name || "");
             }
         } catch (err) {
-            console.error("Gagal mengambil UOM:", err);
-            setUoms([]);
+            console.error("Gagal mengambil UOM default:", err);
         }
     }, [isNew]);
 
@@ -493,12 +494,11 @@ function ProductDetail() {
         fetchBom();
         fetchUomLines();
         fetchPriceListVersions();
-        fetchVendorOptions();
         fetchProductCategories();
-        fetchUoms();
+        fetchDefaultUom();
         fetchCharges();
         fetchProductImages();
-    }, [fetchProduct, fetchVendorLines, fetchPriceLines, fetchBom, fetchUomLines, fetchPriceListVersions, fetchVendorOptions, fetchProductCategories, fetchUoms, fetchCharges, fetchProductImages]);
+    }, [fetchProduct, fetchVendorLines, fetchPriceLines, fetchBom, fetchUomLines, fetchPriceListVersions, fetchProductCategories, fetchDefaultUom, fetchCharges, fetchProductImages]);
 
     // ─── Cari produk komponen BOM (debounce) ────────────────────────────────
     // contains() di REST API ini case-sensitive → dibungkus toupper() di
@@ -1076,14 +1076,13 @@ function ProductDetail() {
 
     // Label UOM dasar (ikut berubah saat user mengganti UOM di form) & opsi UOM
     // tujuan yang masih bisa ditambah: bukan UOM dasar, belum dipakai baris lain.
-    const baseUomLabel =
-        uoms.find((u) => String(getId(u)) === String(form.C_UOM_ID))?.Name ||
-        (product ? getLabel(product.C_UOM_ID) : "UOM dasar");
-    const availableUomTargets = uoms.filter(
-        (u) =>
-            String(getId(u)) !== String(form.C_UOM_ID) &&
-            !uomLines.some((l) => String(getId(l.C_UOM_To_ID)) === String(getId(u)))
-    );
+    const baseUomLabel = baseUomName || (product ? getLabel(product.C_UOM_ID) : "UOM dasar");
+    // UOM yang disembunyikan di modal "Tambah UOM Konversi": UOM dasar + yang sudah dipakai baris lain.
+    const excludedUomTargetIds = [
+        form.C_UOM_ID,
+        ...uomLines.map((l) => getId(l.C_UOM_To_ID)),
+    ].filter(Boolean);
+    const excludedVendorIds = vendorLines.map((l) => getId(l.C_BPartner_ID)).filter(Boolean);
 
     // Hasil pencarian komponen: bukan produk ini sendiri & belum ada di BOM.
     const filteredBomResults = bomSearchResults.filter(
@@ -1228,15 +1227,16 @@ function ProductDetail() {
                                 <div className="classification-section">
                                     <label>UOM *</label>
                                     {isEditing ? (
-                                        <select
-                                            value={form.C_UOM_ID}
-                                            onChange={(e) => setForm({ ...form, C_UOM_ID: e.target.value })}
+                                        <button
+                                            type="button"
+                                            className="ssm-trigger"
+                                            onClick={() => setShowBaseUomPicker(true)}
                                         >
-                                            <option value="">-- Pilih UOM --</option>
-                                            {uoms.map((u, idx) => (
-                                                <option key={getId(u) ?? `uom-${idx}`} value={getId(u)}>{u.Name}</option>
-                                            ))}
-                                        </select>
+                                            {form.C_UOM_ID && baseUomName
+                                                ? <span>{baseUomName}</span>
+                                                : <span className="ssm-trigger-placeholder">-- Pilih UOM --</span>}
+                                            <span aria-hidden="true">🔍</span>
+                                        </button>
                                     ) : <p>{getLabel(product.C_UOM_ID)}</p>}
                                 </div>
                                 <div className="classification-section">
@@ -1600,24 +1600,16 @@ function ProductDetail() {
 
                     {isEditing && (
                         <div className="inline-add-box inline-add-box-select">
-                            <select
-                                className="add-price-select"
-                                defaultValue=""
+                            <button
+                                type="button"
+                                className="ssm-trigger"
                                 disabled={!form.C_UOM_ID}
                                 title={!form.C_UOM_ID ? "Pilih UOM dasar produk terlebih dahulu" : undefined}
-                                onChange={(e) => {
-                                    if (e.target.value) {
-                                        const uom = uoms.find((u) => String(getId(u)) === e.target.value);
-                                        if (uom) handleAddUomLine(uom);
-                                        e.target.value = "";
-                                    }
-                                }}
+                                onClick={() => setShowUomTargetPicker(true)}
                             >
-                                <option value="">+ Tambah UOM Konversi...</option>
-                                {availableUomTargets.map((u, idx) => (
-                                    <option key={getId(u) ?? `uomto-${idx}`} value={getId(u)}>{u.Name}</option>
-                                ))}
-                            </select>
+                                <span className="ssm-trigger-placeholder">+ Tambah UOM Konversi...</span>
+                                <span aria-hidden="true">🔍</span>
+                            </button>
                         </div>
                     )}
                 </div>
@@ -1707,24 +1699,14 @@ function ProductDetail() {
 
                     {isEditing && (
                         <div className="inline-add-box">
-                            <select
-                                className="add-vendor-select"
-                                defaultValue=""
-                                onChange={(e) => {
-                                    if (e.target.value) {
-                                        const bp = vendorOptions.find((v) => String(getId(v)) === e.target.value);
-                                        if (bp) handleAddVendorLine(bp);
-                                        e.target.value = "";
-                                    }
-                                }}
+                            <button
+                                type="button"
+                                className="ssm-trigger"
+                                onClick={() => setShowVendorPicker(true)}
                             >
-                                <option value="">+ Tambah Vendor...</option>
-                                {vendorOptions
-                                    .filter((bp) => !vendorLines.some((l) => getId(l.C_BPartner_ID) === getId(bp)))
-                                    .map((bp, idx) => (
-                                        <option key={getId(bp) ?? `bp-${idx}`} value={getId(bp)}>{bp.Name}</option>
-                                    ))}
-                            </select>
+                                <span className="ssm-trigger-placeholder">+ Tambah Vendor...</span>
+                                <span aria-hidden="true">🔍</span>
+                            </button>
                         </div>
                     )}
                 </div>
@@ -1819,6 +1801,43 @@ function ProductDetail() {
                     )}
                 </div>
             </div>
+
+            <SearchSelectModal
+                isOpen={showVendorPicker}
+                title="Pilih Vendor"
+                onClose={() => setShowVendorPicker(false)}
+                onSelect={handleAddVendorLine}
+                model="c_bpartner"
+                pkColumn="C_BPartner_ID"
+                baseFilter="IsVendor eq true and IsActive eq true"
+                select="Name,Value"
+                searchFields={["Name", "Value"]}
+                excludeIds={excludedVendorIds}
+                renderSecondary={(bp) => bp.Value}
+            />
+
+            <SearchSelectModal
+                isOpen={showBaseUomPicker}
+                title="Pilih UOM"
+                onClose={() => setShowBaseUomPicker(false)}
+                onSelect={(u) => {
+                    setForm((prev) => ({ ...prev, C_UOM_ID: getId(u) }));
+                    setBaseUomName(u.Name || "");
+                }}
+                model="c_uom"
+                pkColumn="C_UOM_ID"
+                selectedId={form.C_UOM_ID}
+            />
+
+            <SearchSelectModal
+                isOpen={showUomTargetPicker}
+                title="Pilih UOM Konversi"
+                onClose={() => setShowUomTargetPicker(false)}
+                onSelect={handleAddUomLine}
+                model="c_uom"
+                pkColumn="C_UOM_ID"
+                excludeIds={excludedUomTargetIds}
+            />
 
             <SuccessModal
                 isOpen={successModal.isOpen}

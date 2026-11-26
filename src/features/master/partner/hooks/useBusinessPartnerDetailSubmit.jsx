@@ -39,6 +39,8 @@ const FIELD_LABELS = {
         c_bp_group_id: "BP Group",
         m_pricelist_id: "Sales Price List",
         po_pricelist_id: "Purchase Price List",
+        c_paymentterm_id: "Payment Term (Customer)",
+        po_paymentterm_id: "Payment Term (Vendor)",
     },
     c_bpartner_location: {
         name: "Nama Alamat",

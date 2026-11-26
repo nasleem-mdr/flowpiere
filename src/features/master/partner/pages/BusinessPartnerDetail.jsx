@@ -79,10 +79,14 @@ function BusinessPartnerDetail() {
         IsVendor: false, IsCustomer: false, IsEmployee: false,
         C_BP_Group_ID: "",
         M_PriceList_ID: "", PO_PriceList_ID: "",
+        C_PaymentTerm_ID: "", PO_PaymentTerm_ID: "",
     });
 
     const [salesPriceLists, setSalesPriceLists] = useState([]);
     const [purchasePriceLists, setPurchasePriceLists] = useState([]);
+    // Satu daftar C_PaymentTerm dipakai bareng oleh field Customer (C_PaymentTerm_ID)
+    // dan Vendor (PO_PaymentTerm_ID) — keduanya FK ke tabel yang sama.
+    const [paymentTerms, setPaymentTerms] = useState([]);
 
     const [locationLines, setLocationLines] = useState([]);
     const [deletedLocationLineIds, setDeletedLocationLineIds] = useState([]);
@@ -128,7 +132,7 @@ function BusinessPartnerDetail() {
         setIsLoading(true);
         try {
             const data = await idempiereApi(
-                `/models/c_bpartner/${id}?$select=Value,Name,TaxID,Description,IsVendor,IsCustomer,IsEmployee,C_BP_Group_ID,M_PriceList_ID,PO_PriceList_ID`
+                `/models/c_bpartner/${id}?$select=Value,Name,TaxID,Description,IsVendor,IsCustomer,IsEmployee,C_BP_Group_ID,M_PriceList_ID,PO_PriceList_ID,C_PaymentTerm_ID,PO_PaymentTerm_ID`
             );
             setBpartner(data);
             setForm({
@@ -142,6 +146,8 @@ function BusinessPartnerDetail() {
                 C_BP_Group_ID: getId(data.C_BP_Group_ID) ?? "",
                 M_PriceList_ID: getId(data.M_PriceList_ID) ?? "",
                 PO_PriceList_ID: getId(data.PO_PriceList_ID) ?? "",
+                C_PaymentTerm_ID: getId(data.C_PaymentTerm_ID) ?? "",
+                PO_PaymentTerm_ID: getId(data.PO_PaymentTerm_ID) ?? "",
             });
         } catch (err) {
             console.error("Gagal mengambil data Business Partner:", err);
@@ -182,6 +188,19 @@ function BusinessPartnerDetail() {
         }
     }, []);
     
+    // ─── FETCH: opsi Payment Term ───────────────────────────────────────────
+    const fetchPaymentTerms = useCallback(async () => {
+        try {
+            const data = await idempiereApi(
+                `/models/c_paymentterm?$filter=${encodeURIComponent("IsActive eq true")}&$select=Name&$orderby=Name`
+            );
+            setPaymentTerms(data.records || []);
+        } catch (err) {
+            console.error("Gagal mengambil Payment Term:", err);
+            setPaymentTerms([]);
+        }
+    }, []);
+
     // ─── FETCH: opsi BP Group ───────────────────────────────────────────────
     const fetchBpGroups = useCallback(async () => {
         try {
@@ -217,8 +236,9 @@ function BusinessPartnerDetail() {
         fetchLocationLines();
         fetchBpGroups();
         fetchPriceLists();
+        fetchPaymentTerms();
         fetchCountries();
-    }, [fetchBpartner, fetchLocationLines, fetchBpGroups, fetchPriceLists, fetchCountries]);
+    }, [fetchBpartner, fetchLocationLines, fetchBpGroups, fetchPriceLists, fetchPaymentTerms, fetchCountries]);
 
     if (isLoading) return <div className="card-container detail-status">Loading detail...</div>;
     if (!isNew && !bpartner) return <div className="card-container detail-status detail-status-empty">Business Partner tidak ditemukan.</div>;
@@ -285,6 +305,17 @@ function BusinessPartnerDetail() {
         }
         if (form.IsVendor) {
             bpartnerPayload.PO_PriceList_ID = { id: parseInt(form.PO_PriceList_ID, 10) };
+        }
+
+        // Payment Term (opsional, tidak wajib): hanya dikirim kalau peran dicentang
+        // DAN user memilih nilai. Alasannya sama seperti Price List — REST API
+        // menolak `null` untuk kolom FK, jadi kosong = field tidak dikirim
+        // (nilai lama di DB, kalau ada, tidak berubah).
+        if (form.IsCustomer && form.C_PaymentTerm_ID) {
+            bpartnerPayload.C_PaymentTerm_ID = { id: parseInt(form.C_PaymentTerm_ID, 10) };
+        }
+        if (form.IsVendor && form.PO_PaymentTerm_ID) {
+            bpartnerPayload.PO_PaymentTerm_ID = { id: parseInt(form.PO_PaymentTerm_ID, 10) };
         }
 
         const locationLinesPayload = locationLines.map((l) => ({
@@ -468,20 +499,30 @@ function BusinessPartnerDetail() {
                             </select>
                         ) : <p>{getLabel(bpartner.C_BP_Group_ID)}</p>}
 
-                        <label>Vendor</label>
-                        {isEditing ? (
-                            <input type="checkbox" checked={form.IsVendor} onChange={(e) => setForm({ ...form, IsVendor: e.target.checked })} />
-                        ) : <p>{bpartner.IsVendor ? 'Yes' : 'No'}</p>}
-
-                        <label>Customer</label>
-                        {isEditing ? (
-                            <input type="checkbox" checked={form.IsCustomer} onChange={(e) => setForm({ ...form, IsCustomer: e.target.checked })} />
-                        ) : <p>{bpartner.IsCustomer ? 'Yes' : 'No'}</p>}
-
-                        <label>Employee</label>
-                        {isEditing ? (
-                            <input type="checkbox" checked={form.IsEmployee} onChange={(e) => setForm({ ...form, IsEmployee: e.target.checked })} />
-                        ) : <p>{bpartner.IsEmployee ? 'Yes' : 'No'}</p>}
+                        <label>Role</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 24px' }}>
+                            {[
+                                { key: 'IsVendor', label: 'Vendor' },
+                                { key: 'IsCustomer', label: 'Customer' },
+                                { key: 'IsEmployee', label: 'Employee' },
+                            ].map(({ key, label }) => (
+                                <label
+                                    key={key}
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', margin: 0, cursor: isEditing ? 'pointer' : 'default' }}
+                                >
+                                    {isEditing ? (
+                                        <input
+                                            type="checkbox"
+                                            checked={form[key]}
+                                            onChange={(e) => setForm({ ...form, [key]: e.target.checked })}
+                                        />
+                                    ) : (
+                                        <span>{bpartner[key] === true || bpartner[key] === "Y" ? '✅' : '—'}</span>
+                                    )}
+                                    <span>{label}</span>
+                                </label>
+                            ))}
+                        </div>
                         {/* di atas return, setelah early return */}
                        
                         {showSalesPL && (
@@ -500,6 +541,23 @@ function BusinessPartnerDetail() {
                                 ) : <p>{getLabel(bpartner.M_PriceList_ID)}</p>}
                             </>
                         )}
+
+                        {showSalesPL && (
+                            <>
+                                <label>Payment Term (Customer)</label>
+                                {isEditing ? (
+                                    <select
+                                        value={form.C_PaymentTerm_ID}
+                                        onChange={(e) => setForm({ ...form, C_PaymentTerm_ID: e.target.value })}
+                                    >
+                                        <option value="">-- Pilih Payment Term --</option>
+                                        {paymentTerms.map((p) => (
+                                            <option key={getId(p)} value={getId(p)}>{p.Name}</option>
+                                        ))}
+                                    </select>
+                                ) : <p>{getLabel(bpartner.C_PaymentTerm_ID)}</p>}
+                            </>
+                        )}
                         
                         {showPurchasePL && (
                             <>
@@ -515,6 +573,23 @@ function BusinessPartnerDetail() {
                                         ))}
                                     </select>
                                 ) : <p>{getLabel(bpartner.PO_PriceList_ID)}</p>}
+                            </>
+                        )}
+
+                        {showPurchasePL && (
+                            <>
+                                <label>Payment Term (Vendor)</label>
+                                {isEditing ? (
+                                    <select
+                                        value={form.PO_PaymentTerm_ID}
+                                        onChange={(e) => setForm({ ...form, PO_PaymentTerm_ID: e.target.value })}
+                                    >
+                                        <option value="">-- Pilih Payment Term --</option>
+                                        {paymentTerms.map((p) => (
+                                            <option key={getId(p)} value={getId(p)}>{p.Name}</option>
+                                        ))}
+                                    </select>
+                                ) : <p>{getLabel(bpartner.PO_PaymentTerm_ID)}</p>}
                             </>
                         )}
                     </div>
