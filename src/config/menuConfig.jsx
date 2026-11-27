@@ -54,7 +54,6 @@ export const menuSections = [
             { key: 'internalUse',   windowKey: 'internalUse',  path: '/internal-use',  label: 'Internal Use',  icon: <UserTake /> },
             { key: 'vendorInvoice',   windowKey: 'vendorInvoice',  path: '/vendor-invoice',  label: 'Purchase Invoice',  icon: <VendorIcon /> },
             { key: 'paymentVendor',   windowKey: 'paymentVendor',  path: '/payment-vendor',  label: 'Payment Vendor',  icon: <MdOutlinePayments size={24} /> },
-            { key: 'paymentVendorList',   windowKey: 'paymentVendorList',  path: '/payment-vendor-list',  label: 'Payment Vendor List',  icon: <MdOutlinePayments size={24} /> },
         ]
     },
     {
@@ -92,6 +91,7 @@ export const menuSections = [
             { key: 'goodsreceipt-list', windowKey: 'goodsReceiptList', path: '/goodsreceipt-list', label: 'Goods Receipt List', icon: <LiaPeopleCarrySolid /> },
             { key: 'internaluse-list', windowKey: 'internalUseList',  path: '/internaluse-list',  label: 'Internal Use List',   icon: <TbCreditCardHand /> },
             { key: 'vendorInvoiceList', windowKey: 'vendorInvoiceList',  path: '/vendorinvoice-list',  label: 'Vendor Invoice List',   icon: <MdOutlineStore /> },      
+            { key: 'paymentVendorList',   windowKey: 'paymentVendorList',  path: '/payment-vendor-list',  label: 'Payment Vendor List',  icon: <MdOutlinePayments size={24} /> },
         ]
     },
     {

@@ -23,7 +23,7 @@ export const WINDOW_ACCESS_MAP = {
   requisition:          322,
   goodsReceipt:         184,
   purchasing:           181,
-  internalUse:          168,
+  internalUse:          341,
   booking:              null,
   vendorInvoice:        183,
   bankStatement:        194,
